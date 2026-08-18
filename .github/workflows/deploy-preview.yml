@@ -18,8 +18,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
+
+      - name: Update npm (fix runner npm bug)
+        run: npm install --global npm@latest
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
