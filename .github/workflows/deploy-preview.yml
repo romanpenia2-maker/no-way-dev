@@ -24,6 +24,9 @@ jobs:
       - name: Update npm (fix runner npm bug)
         run: npm install --global npm@latest
 
+      - name: Update npm (fix runner npm bug)
+        run: npm install --global npm@latest
+
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
