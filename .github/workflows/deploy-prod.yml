@@ -19,9 +19,6 @@ jobs:
       - name: Update npm (fix runner npm bug)
         run: npm install --global npm@latest
 
-      - name: Update npm (fix runner npm bug)
-        run: npm install --global npm@latest
-
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
@@ -37,6 +34,7 @@ jobs:
       - name: Notify Telegram
         if: always()
         run: |
-          STATUS="${{ job.status }}"; [ "$STATUS" = "success" ] && ICON="🚀" || ICON="❌"
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage"             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}"             --data-urlencode "text=$ICON no-way.dev прод-деплой: $STATUS
-${{ github.event.head_commit.message }}" > /dev/null
+          STATUS="${{ job.status }}"
+          if [ "$STATUS" = "success" ]; then ICON="🚀"; else ICON="❌"; fi
+          MSG="$ICON no-way.dev прод-деплой: $STATUS — ${{ github.event.head_commit.message }}"
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" --data-urlencode "text=$MSG" > /dev/null

@@ -38,8 +38,7 @@ jobs:
       - name: Notify Telegram
         if: always()
         run: |
-          STATUS="${{ job.status }}"; [ "$STATUS" = "success" ] && ICON="🧪" || ICON="❌"
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            --data-urlencode "text=$ICON RC-стейджинг: $STATUS → https://rc.no-way.dev
-${{ github.event.head_commit.message }}" > /dev/null
+          STATUS="${{ job.status }}"
+          if [ "$STATUS" = "success" ]; then ICON="🧪"; else ICON="❌"; fi
+          MSG="$ICON RC-стейджинг: $STATUS → https://rc.no-way.dev — ${{ github.event.head_commit.message }}"
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" --data-urlencode "text=$MSG" > /dev/null
