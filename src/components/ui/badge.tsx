@@ -2,22 +2,20 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: "default" | "secondary" | "outline" | "solid";
+  variant?: "default" | "secondary" | "outline";
 }
 
 const variantClasses: Record<NonNullable<BadgeProps["variant"]>, string> = {
-  default: "border-ink text-ink",
-  secondary: "border-line text-ink2",
-  outline: "border-ink text-ink",
-  /* инвертированная плашка — единственный «акцент» системы */
-  solid: "border-ink bg-ink text-paper",
+  default: "border-transparent bg-accent/15 text-accent",
+  secondary: "border-transparent bg-muted text-muted-foreground",
+  outline: "border-border text-muted-foreground",
 };
 
 export function Badge({ className, variant = "default", ...props }: BadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-none border px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase leading-none tracking-[0.08em]",
+        "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium transition-colors",
         variantClasses[variant],
         className,
       )}

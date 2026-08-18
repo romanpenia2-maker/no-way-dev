@@ -1,25 +1,12 @@
 import type { Metadata } from "next";
-import { Archivo, Inter, JetBrains_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { ThemeProvider } from "@/components/theme-provider";
 import { site } from "@/lib/site";
 import "./globals.css";
 
-const archivo = Archivo({
-  subsets: ["latin"],
-  weight: ["700", "800"],
-  variable: "--font-archivo",
-});
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-inter",
-});
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  variable: "--font-jbmono",
-});
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -37,16 +24,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${archivo.variable} ${inter.variable} ${jetbrainsMono.variable}`}>
-      <body className="min-h-screen">
-        {/* Неподвижное зерно бумаги поверх всего листа */}
-        <div className="paper-grain" aria-hidden="true" />
-        {/* Лист: бумага с чернильной рамкой поверх backdrop */}
-        <div className="mx-auto flex min-h-screen w-full max-w-content flex-col border-x border-ink bg-paper">
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
+      <body className="flex min-h-screen flex-col font-sans">
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />
-        </div>
+        </ThemeProvider>
       </body>
     </html>
   );

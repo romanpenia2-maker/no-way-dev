@@ -11,7 +11,7 @@ import { formatDate, formatPricePer1M, formatTokens, cn } from "@/lib/utils";
 
 type SortKey = "model" | "provider" | "input" | "output" | "context" | "updated";
 
-const columns: { key: SortKey; label: string; numeric?: boolean; hideMobile?: boolean }[] = [
+const columns: { key: SortKey; label: string; numeric?: boolean }[] = [
   { key: "model", label: "Model" },
   { key: "provider", label: "Provider" },
   { key: "input", label: "Input $/1M", numeric: true },
@@ -69,8 +69,8 @@ export function PricingTable({ rows }: { rows: PriceRow[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 border border-line p-3 sm:flex-row sm:items-center">
-        <label className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
           Provider
           <Select value={provider} onChange={(e) => setProvider(e.target.value)} className="w-44">
             <option value="all">All providers</option>
@@ -81,7 +81,7 @@ export function PricingTable({ rows }: { rows: PriceRow[] }) {
             ))}
           </Select>
         </label>
-        <label className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
           Capability
           <Select value={capability} onChange={(e) => setCapability(e.target.value)} className="w-44">
             <option value="all">All capabilities</option>
@@ -92,8 +92,8 @@ export function PricingTable({ rows }: { rows: PriceRow[] }) {
             ))}
           </Select>
         </label>
-        <span className="font-mono text-[11px] text-ink2 nums sm:ml-auto">
-          {String(filtered.length).padStart(2, "0")}/{String(rows.length).padStart(2, "0")} rows
+        <span className="text-sm text-muted-foreground sm:ml-auto">
+          {filtered.length} of {rows.length} rows
         </span>
       </div>
 
@@ -102,11 +102,10 @@ export function PricingTable({ rows }: { rows: PriceRow[] }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-10">#</TableHead>
               {columns.map((col) => (
                 <TableHead
                   key={col.key}
-                  className={cn("cursor-pointer select-none hover:text-ink", col.numeric && "text-right")}
+                  className={cn("cursor-pointer select-none hover:text-foreground", col.numeric && "text-right")}
                   onClick={() => toggleSort(col.key)}
                   aria-sort={sortKey === col.key ? (sortAsc ? "ascending" : "descending") : undefined}
                 >
@@ -116,60 +115,47 @@ export function PricingTable({ rows }: { rows: PriceRow[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((row, i) => (
-              <TableRow key={`${row.modelSlug}-${row.pricingProvider}`} className="row-fade cursor-pointer">
-                <TableCell className="font-mono text-xs text-ink2 nums">
-                  {String(i + 1).padStart(2, "0")}
-                </TableCell>
-                <TableCell>
-                  <Link
-                    href={`/models/${row.modelSlug}`}
-                    className="font-semibold underline-offset-4 hover:underline"
-                  >
+            {filtered.map((row) => (
+              <TableRow key={`${row.modelSlug}-${row.pricingProvider}`}>
+                <TableCell className="font-medium">
+                  <Link href={`/models/${row.modelSlug}`} className="hover:text-accent hover:underline">
                     {row.modelName}
-                  </Link>{" "}
-                  <Badge variant={row.openWeights ? "outline" : "solid"} className="ml-1 align-middle">
-                    {row.openWeights ? "Open" : "Closed"}
-                  </Badge>
+                  </Link>
                 </TableCell>
-                <TableCell className="text-ink2">{row.pricingProvider}</TableCell>
-                <TableCell className="text-right font-mono font-bold nums">
-                  {formatPricePer1M(row.inputPer1M)}
-                </TableCell>
-                <TableCell className="text-right font-mono font-bold nums">
-                  {formatPricePer1M(row.outputPer1M)}
-                </TableCell>
-                <TableCell className="text-right font-mono text-ink2 nums">
+                <TableCell className="text-muted-foreground">{row.pricingProvider}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatPricePer1M(row.inputPer1M)}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatPricePer1M(row.outputPer1M)}</TableCell>
+                <TableCell className="text-right tabular-nums text-muted-foreground">
                   {formatTokens(row.contextTokens)}
                 </TableCell>
-                <TableCell className="font-mono text-xs text-ink2 nums">{formatDate(row.updatedAt)}</TableCell>
+                <TableCell className="text-muted-foreground">{formatDate(row.updatedAt)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </Card>
 
-      {/* Mobile rows: имя + главное число, остальное второй строкой */}
-      <div className="md:hidden">
-        {filtered.map((row, i) => (
-          <div key={`${row.modelSlug}-${row.pricingProvider}`} className="row-fade border-b border-line py-3">
-            <div className="flex items-baseline justify-between gap-3">
-              <Link href={`/models/${row.modelSlug}`} className="font-semibold underline-offset-4 hover:underline">
+      {/* Mobile cards */}
+      <div className="grid gap-3 md:hidden">
+        {filtered.map((row) => (
+          <Card key={`${row.modelSlug}-${row.pricingProvider}`} className="p-4">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <Link href={`/models/${row.modelSlug}`} className="font-medium hover:text-accent hover:underline">
                 {row.modelName}
               </Link>
-              <span className="font-mono text-xl font-bold nums">{formatPricePer1M(row.inputPer1M)}</span>
+              <Badge variant="secondary">{row.pricingProvider}</Badge>
             </div>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-ink2 nums">
-              <span>{String(i + 1).padStart(2, "0")}</span>
-              <Badge variant={row.openWeights ? "outline" : "solid"}>
-                {row.openWeights ? "Open" : "Closed"}
-              </Badge>
-              <span>{row.pricingProvider}</span>
-              <span>out {formatPricePer1M(row.outputPer1M)}</span>
-              <span>ctx {formatTokens(row.contextTokens)}</span>
-              <span>upd {formatDate(row.updatedAt)}</span>
-            </div>
-          </div>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+              <dt className="text-muted-foreground">Input $/1M</dt>
+              <dd className="text-right tabular-nums">{formatPricePer1M(row.inputPer1M)}</dd>
+              <dt className="text-muted-foreground">Output $/1M</dt>
+              <dd className="text-right tabular-nums">{formatPricePer1M(row.outputPer1M)}</dd>
+              <dt className="text-muted-foreground">Context</dt>
+              <dd className="text-right tabular-nums">{formatTokens(row.contextTokens)}</dd>
+              <dt className="text-muted-foreground">Updated</dt>
+              <dd className="text-right">{formatDate(row.updatedAt)}</dd>
+            </dl>
+          </Card>
         ))}
       </div>
     </div>

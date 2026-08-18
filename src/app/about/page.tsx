@@ -12,11 +12,8 @@ export default function AboutPage() {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6">
       <JsonLd data={personJsonLd()} />
-      <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">Colophon</p>
-      <h1 className="mb-6 font-display text-4xl font-extrabold uppercase leading-[0.94] tracking-[-0.03em] sm:text-5xl">
-        About
-      </h1>
-      <div className="space-y-4 text-[15px] leading-7 text-ink2">
+      <h1 className="mb-6 text-3xl font-bold tracking-tight">About</h1>
+      <div className="space-y-4 text-muted-foreground">
         <p>
           no-way.dev is built and maintained by an ex-developer, AI R&amp;D team lead. After years of wiring LLM
           APIs into products — and re-checking pricing pages far too often — I started keeping a single reference
@@ -29,7 +26,7 @@ export default function AboutPage() {
         </p>
         <p>
           Found an error or a stale price?{" "}
-          <a href={site.github} rel="noopener" className="font-medium text-ink underline underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline">
+          <a href={site.github} rel="noopener" className="text-accent hover:underline">
             Open an issue on GitHub
           </a>{" "}
           — corrections usually ship within a day.
