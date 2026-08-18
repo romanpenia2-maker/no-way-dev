@@ -1,0 +1,76 @@
+name: Telegram bot (polling)
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  actions: write
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Poll Telegram updates and create issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          OWNER_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -e
+          LAST=$(gh variable get LAST_TG_UPDATE_ID 2>/dev/null || echo "0")
+          echo "Last processed update_id: $LAST"
+          curl -s "https://api.telegram.org/bot$TG_TOKEN/getUpdates?offset=$((LAST + 1))&limit=50" > updates.json
+
+          python3 << 'PYEOF'
+          import json, os, subprocess
+
+          OWNER = os.environ["OWNER_CHAT"]
+          updates = json.load(open("updates.json")).get("result", [])
+          if not updates:
+              print("no new updates"); raise SystemExit(0)
+
+          max_id = 0
+          for u in updates:
+              uid = u["update_id"]; max_id = max(max_id, uid)
+              m = u.get("message") or {}
+              chat = str(m.get("chat", {}).get("id", ""))
+              text = (m.get("text") or "").strip()
+              if chat != OWNER or not text:
+                  continue  # только владелец, только текст
+
+              if text.startswith("/start"):
+                  reply = ("🤖 no-way.dev пульт.\n\nПросто напиши идею текстом — создам issue с label `idea`.\n"
+                           "Команды:\n/status — статус последних issues\n/help — эта справка")
+              elif text.startswith("/help"):
+                  reply = "Напиши идею текстом → она станет GitHub issue → агент реализует → preview придёт сюда."
+              elif text.startswith("/status"):
+                  out = subprocess.run(["gh", "issue", "list", "--repo", os.environ["REPO"], "--limit", "5",
+                                        "--json", "number,title,state", "--jq",
+                                        ".[] | \"#\\(.number) [\\(.state)] \\(.title)\""],
+                                       capture_output=True, text=True).stdout or "issues пока нет"
+                  reply = "📋 Последние issues:\n" + out
+              else:
+                  # создаём issue
+                  title = text.split("\n")[0][:80]
+                  body = f"Идея из Telegram:\n\n{text}"
+                  r = subprocess.run(["gh", "issue", "create", "--repo", os.environ["REPO"],
+                                      "--title", f"[idea]: {title}", "--body", body,
+                                      "--label", "idea"], capture_output=True, text=True)
+                  url = r.stdout.strip()
+                  num = url.rstrip("/").split("/")[-1] if "issue" in url else "?"
+                  reply = f"✅ Идея принята → issue #{num}\n{url}\n\nРеализацию и preview пришлю сюда."
+
+              subprocess.run(["curl", "-s", "-X", "POST",
+                              f"https://api.telegram.org/bot{os.environ['TG_TOKEN']}/sendMessage",
+                              "-d", f"chat_id={OWNER}", "--data-urlencode", f"text={reply}"],
+                             capture_output=True)
+              print("processed update", uid)
+
+          # сохраняем offset
+          subprocess.run(["gh", "variable", "set", "LAST_TG_UPDATE_ID", "-b", str(max_id)], check=True)
+          print("offset saved:", max_id)
+          PYEOF
