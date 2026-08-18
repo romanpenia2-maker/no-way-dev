@@ -1,0 +1,45 @@
+name: Deploy RC staging (rc.no-way.dev)
+
+on:
+  push:
+    branches: [rc]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Update npm (fix runner npm bug)
+        run: npm install --global npm@latest
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel environment
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build project
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy staging
+        id: deploy
+        run: echo "url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})" >> "$GITHUB_OUTPUT"
+
+      - name: Alias to rc.no-way.dev
+        run: vercel alias set "${{ steps.deploy.outputs.url }}" rc.no-way.dev --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Notify Telegram
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"; [ "$STATUS" = "success" ] && ICON="🧪" || ICON="❌"
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            --data-urlencode "text=$ICON RC-стейджинг: $STATUS → https://rc.no-way.dev
+${{ github.event.head_commit.message }}" > /dev/null
