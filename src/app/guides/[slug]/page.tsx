@@ -40,10 +40,13 @@ export default async function GuidePage({ params }: Props) {
           { name: guide.frontmatter.title, url: `${site.url}/guides/${guide.slug}` },
         ])}
       />
-      <header className="mb-10 space-y-3">
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{guide.frontmatter.title}</h1>
-        <p className="text-muted-foreground">{guide.frontmatter.description}</p>
-        <p className="text-sm text-muted-foreground">
+      <header className="mb-10 space-y-3 border-b border-line pb-8">
+        <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">Guide</p>
+        <h1 className="font-display text-4xl font-extrabold uppercase leading-[0.94] tracking-[-0.03em]">
+          {guide.frontmatter.title}
+        </h1>
+        <p className="text-[15px] leading-7 text-ink2">{guide.frontmatter.description}</p>
+        <p className="font-mono text-[11px] text-ink2 nums">
           Published <time dateTime={guide.frontmatter.publishedAt}>{formatDate(guide.frontmatter.publishedAt)}</time>
         </p>
       </header>

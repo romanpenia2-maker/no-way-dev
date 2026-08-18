@@ -34,15 +34,21 @@ const sections = [
 export default function MethodologyPage() {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6">
-      <h1 className="mb-3 text-3xl font-bold tracking-tight">Methodology</h1>
-      <p className="mb-10 text-muted-foreground">
+      <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">Process</p>
+      <h1 className="mb-3 font-display text-4xl font-extrabold uppercase leading-[0.94] tracking-[-0.03em] sm:text-5xl">
+        Methodology
+      </h1>
+      <p className="mb-10 text-[15px] leading-7 text-ink2">
         Trust comes from process. Here is exactly how the numbers on this site are collected and kept fresh.
       </p>
       <div className="space-y-10">
-        {sections.map((s) => (
-          <section key={s.title}>
-            <h2 className="mb-2 text-xl font-semibold tracking-tight">{s.title}</h2>
-            <p className="text-muted-foreground">{s.body}</p>
+        {sections.map((s, i) => (
+          <section key={s.title} className="border-t border-ink pt-4">
+            <p className="mb-1 font-mono text-xs font-bold text-ink2 nums">{String(i + 1).padStart(2, "0")}</p>
+            <h2 className="mb-2 font-display text-xl font-bold uppercase leading-[0.94] tracking-[-0.02em]">
+              {s.title}
+            </h2>
+            <p className="text-[15px] leading-7 text-ink2">{s.body}</p>
           </section>
         ))}
       </div>

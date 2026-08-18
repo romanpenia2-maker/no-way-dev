@@ -1,39 +1,47 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  darkMode: "class",
   content: ["./src/**/*.{ts,tsx,mdx}"],
   theme: {
     extend: {
       colors: {
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        /* E-ink tokens */
+        paper: "var(--paper)",
+        backdrop: "var(--backdrop)",
+        ink: "var(--px)",
+        ink2: "var(--px2)",
+        line: "var(--line)",
+        /* Legacy aliases → tokens, so any leftover class stays monochrome */
+        background: "var(--paper)",
+        foreground: "var(--px)",
         card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+          DEFAULT: "var(--paper)",
+          foreground: "var(--px)",
         },
         muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+          DEFAULT: "var(--line)",
+          foreground: "var(--px2)",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: "var(--px)",
+          foreground: "var(--paper)",
         },
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
+        border: "var(--line)",
+        input: "var(--px2)",
+        ring: "var(--px)",
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: "2px",
+        md: "2px",
+        sm: "0px",
       },
       fontFamily: {
+        display: ["var(--font-archivo)", "var(--font-inter)", "system-ui", "sans-serif"],
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        mono: ["var(--font-jbmono)", "var(--mono)"],
       },
       maxWidth: {
-        content: "72rem",
+        content: "1160px",
       },
     },
   },

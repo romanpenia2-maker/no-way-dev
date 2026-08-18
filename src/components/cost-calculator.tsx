@@ -6,6 +6,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -27,6 +28,8 @@ function parseNumberParam(searchParams: URLSearchParams | null, key: string, fal
   const parsed = raw === null || raw === undefined ? NaN : Number(raw);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
+
+const tickStyle = { fontSize: 10, fill: "var(--px2)", fontFamily: "var(--font-jbmono), monospace" };
 
 export function CostCalculator({ rows }: { rows: PriceRow[] }) {
   const searchParams = useSearchParams();
@@ -76,8 +79,8 @@ export function CostCalculator({ rows }: { rows: PriceRow[] }) {
       <Card className="p-4 sm:p-6">
         <div className="grid gap-4 sm:grid-cols-3">
           {fields.map((f) => (
-            <label key={f.label} className="space-y-1.5 text-sm font-medium">
-              {f.label}
+            <label key={f.label} className="space-y-1.5">
+              <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">{f.label}</span>
               <Input
                 type="number"
                 min={1}
@@ -87,10 +90,10 @@ export function CostCalculator({ rows }: { rows: PriceRow[] }) {
             </label>
           ))}
         </div>
-        <div className="mt-4 flex items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">
+        <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="font-mono text-xs text-ink2 nums">
             {requestsPerDay.toLocaleString("en-US")} req/day × 30 days ={" "}
-            {(requestsPerDay * 30).toLocaleString("en-US")} requests/month
+            <span className="font-bold text-ink">{(requestsPerDay * 30).toLocaleString("en-US")} requests/month</span>
           </p>
           <Button variant="outline" size="sm" onClick={share}>
             {copied ? "Copied!" : "Copy share link"}
@@ -99,58 +102,76 @@ export function CostCalculator({ rows }: { rows: PriceRow[] }) {
       </Card>
 
       <Card className="p-4 sm:p-6">
-        <h2 className="mb-4 text-lg font-semibold tracking-tight">Top 10 cheapest — monthly cost</h2>
+        <div className="mb-4 flex items-baseline justify-between gap-2">
+          <h2 className="font-display text-lg font-bold uppercase leading-[0.94] tracking-[-0.02em]">
+            Top 10 cheapest — monthly cost
+          </h2>
+          <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">usd / month</span>
+        </div>
         <div className="h-80 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={top10} margin={{ top: 4, right: 8, bottom: 60, left: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <CartesianGrid strokeDasharray="2 4" stroke="var(--line)" vertical={false} />
               <XAxis
                 dataKey="modelName"
                 angle={-35}
                 textAnchor="end"
                 interval={0}
-                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                tick={tickStyle}
+                axisLine={{ stroke: "var(--px)" }}
+                tickLine={{ stroke: "var(--px)" }}
               />
               <YAxis
-                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                tick={tickStyle}
                 tickFormatter={(v: number) => `$${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toFixed(0)}`}
+                axisLine={{ stroke: "var(--px)" }}
+                tickLine={{ stroke: "var(--px)" }}
               />
               <Tooltip
+                cursor={{ fill: "var(--px)", fillOpacity: 0.08 }}
                 formatter={(value) => [formatUsd(Number(value)), "Monthly cost"]}
                 labelFormatter={(_, payload) => {
                   const item = payload?.[0]?.payload as CostRow | undefined;
                   return item ? `${item.modelName} @ ${item.pricingProvider}` : "";
                 }}
                 contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "var(--radius)",
-                  color: "hsl(var(--foreground))",
+                  backgroundColor: "var(--paper)",
+                  border: "1px solid var(--px)",
+                  borderRadius: 0,
+                  color: "var(--px)",
+                  fontFamily: "var(--font-jbmono), monospace",
+                  fontSize: 12,
                 }}
               />
-              <Bar dataKey="monthlyCost" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="monthlyCost" fill="var(--px)" radius={0}>
+                {top10.map((_, i) => (
+                  <Cell key={i} fillOpacity={Math.max(0.4, 1 - i * 0.07)} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
       </Card>
 
-      <Card>
+      <Card className="row-fade">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>#</TableHead>
+              <TableHead className="w-10">#</TableHead>
               <TableHead>Model</TableHead>
-              <TableHead>Provider</TableHead>
+              <TableHead className="hidden sm:table-cell">Provider</TableHead>
               <TableHead className="text-right">Monthly cost</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {costs.map((row, i) => (
               <TableRow key={`${row.modelSlug}-${row.pricingProvider}`}>
-                <TableCell className="text-muted-foreground tabular-nums">{i + 1}</TableCell>
-                <TableCell className="font-medium">{row.modelName}</TableCell>
-                <TableCell className="text-muted-foreground">{row.pricingProvider}</TableCell>
-                <TableCell className="text-right font-medium tabular-nums">{formatUsd(row.monthlyCost)}</TableCell>
+                <TableCell className="font-mono text-xs text-ink2 nums">
+                  {String(i + 1).padStart(2, "0")}
+                </TableCell>
+                <TableCell className="font-semibold">{row.modelName}</TableCell>
+                <TableCell className="hidden text-ink2 sm:table-cell">{row.pricingProvider}</TableCell>
+                <TableCell className="text-right font-mono font-bold nums">{formatUsd(row.monthlyCost)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
