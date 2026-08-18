@@ -1,0 +1,31 @@
+{
+  "slug": "gemini-2.5-flash",
+  "name": "Gemini 2.5 Flash",
+  "provider": "google",
+  "releasedAt": "2025-06-17",
+  "status": "ga",
+  "context": {
+    "tokens": 1048576,
+    "maxOutput": 65536
+  },
+  "pricing": [
+    {
+      "provider": "google",
+      "inputPer1M": 0.3,
+      "outputPer1M": 2.5,
+      "updatedAt": "2025-11-01",
+      "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
+      "cachedInputPer1M": 0.075
+    }
+  ],
+  "capabilities": [
+    "text",
+    "vision",
+    "audio",
+    "tools",
+    "json-mode",
+    "reasoning"
+  ],
+  "openWeights": false,
+  "lastVerifiedAt": "2025-11-01"
+}

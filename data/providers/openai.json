@@ -1,0 +1,7 @@
+{
+  "slug": "openai",
+  "name": "OpenAI",
+  "websiteUrl": "https://openai.com",
+  "pricingUrl": "https://openai.com/api/pricing/",
+  "apiDocsUrl": "https://platform.openai.com/docs"
+}

@@ -1,0 +1,44 @@
+# .github/ISSUE_TEMPLATE/idea.yml
+# Форма для подачи идеи: заполняешь 2 поля → label `idea` → агент делает варианты
+name: "💡 Идея / фича"
+description: "Кинь идею — ИИ-агент подготовит варианты реализации на preview"
+title: "[idea]: "
+labels: ["idea"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Что сделать
+      description: Свободной формой. Чем конкретнее, тем лучше варианты. Примеры — ниже в placeholder.
+      placeholder: |
+        Пример 1: Добавь страницу сравнения цен vision-моделей — таблица + фильтр по провайдеру.
+        Пример 2: В VRAM-калькулятор добавь пресеты популярных конфигов (1x4090, 2x3090, M4 Max).
+        Пример 3: Сделай гайд "How to cut LLM API costs by 80%" с примерами из наших данных.
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Тип
+      options:
+        - Новая страница / модуль
+        - Правка существующей страницы
+        - Данные (добавить/исправить)
+        - Контент (гайд, дайджест)
+        - Дизайн / UX
+    validations:
+      required: true
+  - type: textarea
+    id: refs
+    attributes:
+      label: Референсы / заметки (необязательно)
+      placeholder: Ссылки на примеры, сайты-референсы, скриншоты
+  - type: checkboxes
+    id: options
+    attributes:
+      label: Опции
+      options:
+        - label: Сделать 2 варианта реализации (A — консервативный, B — смелый)
+          required: false
+        - label: Срочно — один вариант, без A/B
+          required: false

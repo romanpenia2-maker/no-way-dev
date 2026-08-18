@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Design tokens — low-saturation warm palette.
+  Light: warm stone background, amber accent. Dark: warm near-black.
+*/
+:root {
+  --background: 40 23% 97%;
+  --foreground: 24 10% 12%;
+  --card: 40 30% 99%;
+  --card-foreground: 24 10% 12%;
+  --muted: 36 14% 92%;
+  --muted-foreground: 28 7% 42%;
+  --accent: 33 90% 40%;
+  --accent-foreground: 40 30% 99%;
+  --border: 32 12% 86%;
+  --input: 32 12% 82%;
+  --ring: 33 90% 40%;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: 24 9% 7%;
+  --foreground: 40 20% 94%;
+  --card: 26 8% 10%;
+  --card-foreground: 40 20% 94%;
+  --muted: 26 7% 15%;
+  --muted-foreground: 32 8% 62%;
+  --accent: 38 92% 52%;
+  --accent-foreground: 24 10% 8%;
+  --border: 26 7% 19%;
+  --input: 26 7% 24%;
+  --ring: 38 92% 52%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+/* Minimal typography for MDX guides (no typography plugin) */
+@layer components {
+  .mdx-content {
+    @apply space-y-5 text-foreground/90;
+  }
+  .mdx-content h2 {
+    @apply mt-10 text-2xl font-semibold tracking-tight text-foreground;
+  }
+  .mdx-content h3 {
+    @apply mt-8 text-xl font-semibold tracking-tight text-foreground;
+  }
+  .mdx-content p {
+    @apply leading-7;
+  }
+  .mdx-content a {
+    @apply font-medium text-accent underline-offset-4 hover:underline;
+  }
+  .mdx-content ul {
+    @apply list-disc space-y-2 pl-6;
+  }
+  .mdx-content ol {
+    @apply list-decimal space-y-2 pl-6;
+  }
+  .mdx-content strong {
+    @apply font-semibold text-foreground;
+  }
+  .mdx-content code {
+    @apply rounded bg-muted px-1.5 py-0.5 text-sm;
+  }
+  .mdx-content pre {
+    @apply overflow-x-auto rounded-lg border border-border bg-muted p-4 text-sm;
+  }
+  .mdx-content pre code {
+    @apply bg-transparent p-0;
+  }
+  .mdx-content hr {
+    @apply border-border;
+  }
+  .mdx-content blockquote {
+    @apply border-l-2 border-accent pl-4 italic text-muted-foreground;
+  }
+}

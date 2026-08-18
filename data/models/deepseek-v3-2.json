@@ -1,0 +1,37 @@
+{
+  "slug": "deepseek-v3-2",
+  "name": "DeepSeek V3.2",
+  "provider": "deepseek",
+  "releasedAt": "2025-09-29",
+  "status": "ga",
+  "context": {
+    "tokens": 128000,
+    "maxOutput": 8192
+  },
+  "pricing": [
+    {
+      "provider": "deepseek",
+      "inputPer1M": 0.28,
+      "outputPer1M": 0.42,
+      "updatedAt": "2025-11-01",
+      "sourceUrl": "https://api-docs.deepseek.com/quick_start/pricing",
+      "cachedInputPer1M": 0.028
+    },
+    {
+      "provider": "openrouter",
+      "inputPer1M": 0.3,
+      "outputPer1M": 0.45,
+      "updatedAt": "2025-11-01",
+      "sourceUrl": "https://openrouter.ai/models"
+    }
+  ],
+  "capabilities": [
+    "text",
+    "tools",
+    "json-mode",
+    "reasoning"
+  ],
+  "openWeights": true,
+  "license": "MIT",
+  "lastVerifiedAt": "2025-11-01"
+}

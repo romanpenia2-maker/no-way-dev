@@ -1,0 +1,31 @@
+---
+title: "How to compare LLM API pricing"
+description: "A five-step checklist for comparing LLM API prices without falling for headline numbers."
+publishedAt: "2025-11-01"
+---
+
+Comparing LLM APIs by the big number on the pricing page is how teams end up 3× over budget. Here is a checklist that works.
+
+## 1. Normalize the units
+
+Providers quote prices per 1K, per 1M, or per "credit". Convert everything to **USD per 1M tokens** before comparing anything. On this site, every price is already normalized — that is the whole point of the dataset.
+
+## 2. Price your real traffic mix
+
+Input and output tokens are billed separately, and output is usually 3–5× more expensive. A model that looks cheap on input can be expensive for generation-heavy workloads. Use your actual ratio: a chatbot might be 2:1 input-to-output, a summarizer 20:1. The [cost calculator](/calculators/cost) does exactly this math for every model × provider pair.
+
+## 3. Count cached input separately
+
+If you resend a long system prompt or document with every request, prompt caching changes the picture completely. Cached input tokens typically cost 10–50% of the list price. Models differ a lot here — always check the `cachedInputPer1M` column, not just the headline rate.
+
+## 4. Check the context window you actually need
+
+A 128K-token model is not a substitute for a 1M-token model if your workload needs long documents. Some providers also charge a higher tier once you cross a context threshold — the base price you see may not apply at 900K tokens.
+
+## 5. Look at freshness and the source
+
+Pricing changes every few months, and old blog posts still rank. Before trusting any number, check two things: when it was verified, and whether it links to the official pricing page. Every entry in our [pricing table](/pricing) carries both — an `updatedAt` date and a `sourceUrl`. If a site shows a price with neither, treat it as a rumor.
+
+---
+
+**Bottom line:** normalize units, model your own traffic mix, account for caching, match the context window, and only trust sourced, dated numbers. Do those five things and the "which API is cheapest" question answers itself.

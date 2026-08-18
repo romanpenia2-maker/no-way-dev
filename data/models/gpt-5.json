@@ -1,0 +1,30 @@
+{
+  "slug": "gpt-5",
+  "name": "GPT-5",
+  "provider": "openai",
+  "releasedAt": "2025-08-07",
+  "status": "ga",
+  "context": {
+    "tokens": 400000,
+    "maxOutput": 128000
+  },
+  "pricing": [
+    {
+      "provider": "openai",
+      "inputPer1M": 1.25,
+      "outputPer1M": 10.0,
+      "updatedAt": "2025-11-01",
+      "sourceUrl": "https://openai.com/api/pricing/",
+      "cachedInputPer1M": 0.125
+    }
+  ],
+  "capabilities": [
+    "text",
+    "vision",
+    "tools",
+    "json-mode",
+    "reasoning"
+  ],
+  "openWeights": false,
+  "lastVerifiedAt": "2025-11-01"
+}

@@ -1,0 +1,46 @@
+name: Update prices
+
+on:
+  schedule:
+    # Weekly, Mondays 06:00 UTC
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run price-update bot
+        run: npm run update-prices
+
+      - name: Validate data
+        run: npm run validate-data
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: bot/update-prices
+          delete-branch: true
+          title: "chore(data): weekly price update"
+          body: |
+            Automated weekly price check by `scripts/bots/update-prices.ts`.
+
+            - [ ] Verify each changed number against its `sourceUrl`
+            - [ ] `npm run validate-data` is green
+            - [ ] Spot-check one changed model page on the preview deploy
+          labels: chore(data)
+          commit-message: "chore(data): weekly price update"
