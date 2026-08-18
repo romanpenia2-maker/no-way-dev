@@ -8,6 +8,7 @@ jobs:
     steps:
       - name: Fetch updates and print chat ids
         run: |
+          curl -s "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/getMe" | python3 -c "import json,sys; d=json.load(sys.stdin); print('BOT USERNAME: @' + d['result']['username'])"
           curl -s "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/getWebhookInfo" | head -c 600; echo
           curl -s "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/getUpdates" | python3 -c "
           import json,sys
