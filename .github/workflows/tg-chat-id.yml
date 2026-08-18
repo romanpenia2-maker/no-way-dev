@@ -1,0 +1,22 @@
+name: Get Telegram chat_id (one-off)
+on:
+  workflow_dispatch:
+
+jobs:
+  get:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch updates and print chat ids
+        run: |
+          curl -s "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/getUpdates" | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          seen=set()
+          for u in d.get('result',[]):
+              m=u.get('message') or u.get('channel_post') or {}
+              c=m.get('chat',{})
+              key=(c.get('id'),c.get('username'),c.get('first_name'))
+              if key[0] and key not in seen:
+                  seen.add(key); print('CHAT_ID:', key[0], '| user:', key[1] or key[2])
+          if not seen: print('NO UPDATES — send /start to the bot first')
+          "
