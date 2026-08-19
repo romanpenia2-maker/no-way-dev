@@ -18,7 +18,13 @@
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing"
     }
   ],
-  "capabilities": ["text", "vision", "tools", "json-mode", "reasoning"],
+  "capabilities": [
+    "text",
+    "vision",
+    "tools",
+    "json-mode",
+    "reasoning"
+  ],
   "openWeights": false,
   "lastVerifiedAt": "2026-08-19",
   "arena": {
@@ -93,13 +99,7 @@
       "note": "vendor-run",
       "testedAt": "2026-08-03",
       "sourceUrl": "https://apidog.com/blog/qwen-3-8-benchmarks/"
-    },
-    {
-      "name": "FrontierSWE",
-      "score": 86.6,
-      "note": "frontierswe.com",
-      "testedAt": "2026-07-16",
-      "sourceUrl": "https://www.kimi.com/blog/kimi-k3"
     }
-  ]
+  ],
+  "benchmarksNote": "Also: FrontierSWE 86.6 (Jul 2026, frontierswe.com)"
 }

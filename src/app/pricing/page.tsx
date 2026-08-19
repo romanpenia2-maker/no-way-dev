@@ -8,6 +8,7 @@ import {
 } from "@/lib/pricing-state";
 import { getAllPriceRows } from "@/lib/data/models";
 import { getProviderNameMap } from "@/lib/data/providers";
+import { first } from "@/lib/search-params";
 
 export const metadata: Metadata = {
   title: "LLM API Pricing — all models, all providers",
@@ -18,10 +19,6 @@ export const metadata: Metadata = {
 
 interface Props {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
-}
-
-function first(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
 }
 
 export default async function PricingPage({ searchParams }: Props) {

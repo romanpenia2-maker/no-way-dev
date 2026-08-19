@@ -19,7 +19,12 @@
       "sourceUrl": "https://api-docs.deepseek.com/quick_start/pricing"
     }
   ],
-  "capabilities": ["text", "tools", "json-mode", "reasoning"],
+  "capabilities": [
+    "text",
+    "tools",
+    "json-mode",
+    "reasoning"
+  ],
   "openWeights": true,
   "license": "MIT",
   "lastVerifiedAt": "2026-08-19",
@@ -46,13 +51,7 @@
       "note": "Artificial Analysis data via secondary source — official model card not directly read",
       "testedAt": "2026-08-07",
       "sourceUrl": "https://verboo.ai/en/blog/qwen-3-7-max-swe-bench-custo-token"
-    },
-    {
-      "name": "Terminal-Bench 2.0",
-      "score": 67.9,
-      "note": "Artificial Analysis data via secondary source — official model card not directly read",
-      "testedAt": "2026-08-07",
-      "sourceUrl": "https://verboo.ai/en/blog/qwen-3-7-max-swe-bench-custo-token"
     }
-  ]
+  ],
+  "benchmarksNote": "Also: Terminal-Bench 2.0 67.9 (Aug 2026, Artificial Analysis via secondary source — older harness, not comparable with Terminal-Bench 2.1)"
 }

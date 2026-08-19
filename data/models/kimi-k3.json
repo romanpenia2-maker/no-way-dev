@@ -18,7 +18,12 @@
       "sourceUrl": "https://platform.moonshot.ai/docs/pricing/chat"
     }
   ],
-  "capabilities": ["text", "tools", "json-mode", "reasoning"],
+  "capabilities": [
+    "text",
+    "tools",
+    "json-mode",
+    "reasoning"
+  ],
   "openWeights": true,
   "license": "Kimi K3 License (MIT-based; attribution required above 100M MAU or $20M/mo revenue)",
   "lastVerifiedAt": "2026-08-19",
@@ -68,32 +73,12 @@
       "sourceUrl": "https://www.kimi.com/blog/kimi-k3"
     },
     {
-      "name": "DeepSWE v1.1",
-      "score": 67.5,
-      "note": "Kimi Code harness; 67.3 with mini-SWE-agent — neutral harness holds up",
-      "testedAt": "2026-07-16",
-      "sourceUrl": "https://www.kimi.com/blog/kimi-k3"
-    },
-    {
       "name": "SWE-bench Verified",
       "score": 93.4,
       "note": "independent measurement by Vals AI",
       "testedAt": "2026-08-01",
       "sourceUrl": "https://www.vals.ai/"
-    },
-    {
-      "name": "Program Bench",
-      "score": 77.8,
-      "note": "vendor",
-      "testedAt": "2026-07-16",
-      "sourceUrl": "https://www.kimi.com/blog/kimi-k3"
-    },
-    {
-      "name": "BrowseComp",
-      "score": 91.2,
-      "note": "with compaction at 300K; 90.4 with full 1M context",
-      "testedAt": "2026-07-16",
-      "sourceUrl": "https://www.kimi.com/blog/kimi-k3"
     }
-  ]
+  ],
+  "benchmarksNote": "Also: DeepSWE v1.1 67.5 (Jul 2026, vendor, Kimi Code harness); Program Bench 77.8 (Jul 2026, vendor); BrowseComp 91.2 (Jul 2026, vendor)"
 }

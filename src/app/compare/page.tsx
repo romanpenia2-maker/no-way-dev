@@ -1,18 +1,16 @@
 import type { Metadata } from "next";
 import { CompareExplorer, MAX_COMPARE, type CompareModel, type CompareScenario } from "@/components/compare-explorer";
 import { ARENA_CATEGORY_ORDER, getBenchmarksMeta } from "@/lib/data/benchmarks";
-import { getAllModels } from "@/lib/data/models";
+import { getAllModels, getCheapestEntry } from "@/lib/data/models";
 import { getProviderName } from "@/lib/data/providers";
+import { findByPrefix, TRACKED_BENCHMARKS } from "@/lib/benchmark-keys";
+import { first, parseCachePct, parsePositiveInt } from "@/lib/search-params";
 import { breadcrumbJsonLd, JsonLd } from "@/lib/seo/jsonld";
 import { site } from "@/lib/site";
 import { monthlyCost, valueScore } from "@/lib/value";
 
 interface Props {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
-}
-
-function first(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
 }
 
 function parseSlugs(raw: string | undefined): string[] {
@@ -27,23 +25,13 @@ function parseSlugs(raw: string | undefined): string[] {
   return out;
 }
 
-function parsePositive(raw: string | undefined, fallback: number): number {
-  const n = raw === undefined ? NaN : Number(raw);
-  return Number.isFinite(n) && n > 0 ? Math.min(n, 1e9) : fallback;
-}
-
 function parseScenario(sp: Record<string, string | string[] | undefined>): CompareScenario {
-  const cacheRaw = Number(first(sp.cache));
   return {
-    requestsPerDay: parsePositive(first(sp.rpd), 10000),
-    inputTokens: parsePositive(first(sp.in), 1000),
-    outputTokens: parsePositive(first(sp.out), 500),
-    cachePct: Number.isFinite(cacheRaw) && cacheRaw >= 0 && cacheRaw <= 90 ? cacheRaw : 0,
+    requestsPerDay: parsePositiveInt(sp.rpd, 10000),
+    inputTokens: parsePositiveInt(sp.in, 1000),
+    outputTokens: parsePositiveInt(sp.out, 500),
+    cachePct: parseCachePct(sp.cache),
   };
-}
-
-function findScore(model: { benchmarks?: { name: string; score: number }[] }, prefix: string): number | undefined {
-  return model.benchmarks?.find((b) => b.name.startsWith(prefix))?.score;
 }
 
 function buildCompareModels(slugs: string[], scenario: CompareScenario): CompareModel[] {
@@ -51,7 +39,7 @@ function buildCompareModels(slugs: string[], scenario: CompareScenario): Compare
   return slugs.flatMap((slug) => {
     const m = getAllModels().find((x) => x.slug === slug);
     if (!m) return [];
-    const price = [...m.pricing].sort((a, b) => a.inputPer1M - b.inputPer1M)[0];
+    const price = getCheapestEntry(m);
     return [
       {
         slug: m.slug,
@@ -63,10 +51,7 @@ function buildCompareModels(slugs: string[], scenario: CompareScenario): Compare
         outputPer1M: price.outputPer1M,
         cachedInputPer1M: price.cachedInputPer1M,
         arena: ARENA_CATEGORY_ORDER.map((cat) => m.arena?.[cat]?.elo),
-        sweBenchPro: findScore(m, "SWE-bench Pro"),
-        terminalBench: findScore(m, "Terminal-Bench"),
-        gpqa: findScore(m, "GPQA"),
-        hle: findScore(m, "Humanity's Last Exam"),
+        benchmarks: TRACKED_BENCHMARKS.map((t) => findByPrefix(m, t.prefix)?.score),
         value: valueScore(m.arena?.text?.elo, price.inputPer1M, price.outputPer1M),
         monthlyCost: monthlyCost(
           scenario.requestsPerDay,

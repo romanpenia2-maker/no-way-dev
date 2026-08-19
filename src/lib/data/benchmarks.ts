@@ -1,12 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { benchmarksMetaSchema, type BenchmarksMeta } from "@data/schemas/benchmarks-meta.schema";
-import type { ArenaCategory, BenchmarkEntry, Model } from "@data/schemas/model.schema";
+import type { ArenaCategory, Model } from "@data/schemas/model.schema";
 import { getAllModels } from "@/lib/data/models";
 import { getProviderName } from "@/lib/data/providers";
+import { trackedBenchmarksOf } from "@/lib/benchmark-keys";
 import {
   ARENA_CATEGORY_ORDER,
-  type BenchmarkValue,
   type CategorySlice,
   type LeaderboardRow,
 } from "@/lib/arena";
@@ -30,11 +30,6 @@ export function getBenchmarksMeta(): BenchmarksMeta {
   return metaCache;
 }
 
-function findBenchmark(benchmarks: BenchmarkEntry[] | undefined, prefix: string): BenchmarkValue | undefined {
-  const hit = benchmarks?.find((b) => b.name.startsWith(prefix));
-  return hit ? { score: hit.score, note: hit.note } : undefined;
-}
-
 function toRow(m: Model, category: ArenaCategory): LeaderboardRow | null {
   const arena = m.arena?.[category];
   if (!arena) return null;
@@ -50,10 +45,8 @@ function toRow(m: Model, category: ArenaCategory): LeaderboardRow | null {
     arena,
     arenaAll: m.arena ?? {},
     benchmarks: m.benchmarks ?? [],
-    sweBenchPro: findBenchmark(m.benchmarks, "SWE-bench Pro"),
-    terminalBench: findBenchmark(m.benchmarks, "Terminal-Bench"),
-    gpqa: findBenchmark(m.benchmarks, "GPQA"),
-    hle: findBenchmark(m.benchmarks, "Humanity's Last Exam"),
+    benchmarksNote: m.benchmarksNote,
+    tracked: trackedBenchmarksOf(m),
   };
 }
 
@@ -71,11 +64,6 @@ export function getAllCategorySlices(): Record<ArenaCategory, CategorySlice> {
   return Object.fromEntries(
     ARENA_CATEGORY_ORDER.map((cat) => [cat, { meta: meta.categories[cat], rows: getCategoryRows(cat) }]),
   ) as Record<ArenaCategory, CategorySlice>;
-}
-
-/** Count of unique benchmark names tracked across all models. */
-export function getUniqueBenchmarkCount(): number {
-  return new Set(getAllModels().flatMap((m) => (m.benchmarks ?? []).map((b) => b.name))).size;
 }
 
 /** Per-slug fallback notes for models with no verified benchmarks (single source: data/meta/benchmarks.json). */

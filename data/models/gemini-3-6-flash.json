@@ -18,7 +18,14 @@
       "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing"
     }
   ],
-  "capabilities": ["text", "vision", "audio", "tools", "json-mode", "reasoning"],
+  "capabilities": [
+    "text",
+    "vision",
+    "audio",
+    "tools",
+    "json-mode",
+    "reasoning"
+  ],
   "openWeights": false,
   "lastVerifiedAt": "2026-08-19",
   "arena": {
@@ -65,13 +72,7 @@
       "note": "official Google model card",
       "testedAt": "2026-07-21",
       "sourceUrl": "https://deepmind.google/models/model-cards/gemini-3-6-flash/"
-    },
-    {
-      "name": "OSWorld-Verified",
-      "score": 83,
-      "note": "official Google model card",
-      "testedAt": "2026-07-21",
-      "sourceUrl": "https://deepmind.google/models/model-cards/gemini-3-6-flash/"
     }
-  ]
+  ],
+  "benchmarksNote": "Also: OSWorld-Verified 83.0 (Jul 2026, official Google model card)"
 }

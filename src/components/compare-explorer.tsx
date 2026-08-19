@@ -3,9 +3,11 @@
 import { useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ValueFootnote } from "@/components/ui/value-footnote";
+import { WeightsBadge } from "@/components/ui/weights-badge";
+import { TRACKED_BENCHMARKS } from "@/lib/benchmark-keys";
 import { formatPricePer1M, formatTokens, formatUsd, cn } from "@/lib/utils";
 
 export const MAX_COMPARE = 4;
@@ -23,10 +25,8 @@ export interface CompareModel {
   cachedInputPer1M?: number;
   /** Arena Elo per slice, aligned with the arenaLabels prop order. */
   arena: (number | undefined)[];
-  sweBenchPro?: number;
-  terminalBench?: number;
-  gpqa?: number;
-  hle?: number;
+  /** Tracked benchmark scores, aligned with TRACKED_BENCHMARKS order. */
+  benchmarks: (number | undefined)[];
   value?: number;
   monthlyCost: number;
 }
@@ -52,7 +52,7 @@ function buildRows(arenaLabels: string[], scenario: CompareScenario): Row[] {
     { label: "Provider", render: (m) => <span className="text-ink2">{m.providerName}</span> },
     {
       label: "Open/Closed",
-      render: (m) => <Badge variant={m.openWeights ? "outline" : "solid"}>{m.openWeights ? "Open" : "Closed"}</Badge>,
+      render: (m) => <WeightsBadge open={m.openWeights} />,
     },
     {
       label: "Price input $/1M",
@@ -78,17 +78,12 @@ function buildRows(arenaLabels: string[], scenario: CompareScenario): Row[] {
       section: i === 0 ? "Arena" : undefined,
       render: (m: CompareModel) => (m.arena[i] !== undefined ? <span className="font-mono nums">{m.arena[i]}</span> : dash),
     })),
-    {
-      label: "SWE-bench Pro",
-      section: "Benchmarks",
-      render: (m) => (m.sweBenchPro !== undefined ? <span className="font-mono nums">{m.sweBenchPro.toFixed(1)}</span> : dash),
-    },
-    {
-      label: "Terminal-Bench",
-      render: (m) => (m.terminalBench !== undefined ? <span className="font-mono nums">{m.terminalBench.toFixed(1)}</span> : dash),
-    },
-    { label: "GPQA", render: (m) => (m.gpqa !== undefined ? <span className="font-mono nums">{m.gpqa.toFixed(1)}</span> : dash) },
-    { label: "HLE", render: (m) => (m.hle !== undefined ? <span className="font-mono nums">{m.hle.toFixed(1)}</span> : dash) },
+    ...TRACKED_BENCHMARKS.map((t, i) => ({
+      label: t.label,
+      section: i === 0 ? "Benchmarks" : undefined,
+      render: (m: CompareModel) =>
+        m.benchmarks[i] !== undefined ? <span className="font-mono nums">{m.benchmarks[i].toFixed(1)}</span> : dash,
+    })),
     {
       label: "Value †",
       section: "Value",
@@ -223,10 +218,10 @@ export function CompareExplorer({
       )}
 
       <p className="font-mono text-[11px] leading-5 text-ink2">
-        — not measured / not published · Value <sup className="font-bold">†</sup> = arena score per $1 of blended
-        price (3:1 input/output mix) · est. monthly = {scenario.requestsPerDay.toLocaleString("en-US")} req/day ×{" "}
-        {scenario.inputTokens.toLocaleString("en-US")} in / {scenario.outputTokens.toLocaleString("en-US")} out
-        tokens{scenario.cachePct > 0 ? ` · ${scenario.cachePct}% cached input` : ""} × 30 days.
+        — not measured / not published · <ValueFootnote /> · est. monthly ={" "}
+        {scenario.requestsPerDay.toLocaleString("en-US")} req/day × {scenario.inputTokens.toLocaleString("en-US")} in
+        / {scenario.outputTokens.toLocaleString("en-US")} out tokens
+        {scenario.cachePct > 0 ? ` · ${scenario.cachePct}% cached input` : ""} × 30 days.
       </p>
     </div>
   );

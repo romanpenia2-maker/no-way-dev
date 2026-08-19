@@ -18,7 +18,13 @@
       "sourceUrl": "https://www.alibabacloud.com/help/en/model-studio/models"
     }
   ],
-  "capabilities": ["text", "vision", "tools", "json-mode", "reasoning"],
+  "capabilities": [
+    "text",
+    "vision",
+    "tools",
+    "json-mode",
+    "reasoning"
+  ],
   "openWeights": false,
   "lastVerifiedAt": "2026-08-19",
   "arena": {
@@ -83,13 +89,6 @@
       "sourceUrl": "https://www.marktechpost.com/2026/08/03/alibaba-qwen-releases-qwen3-8-max/"
     },
     {
-      "name": "OSWorld-Verified",
-      "score": 86.1,
-      "note": "vendor-run (Alibaba official release table); no independent measurements yet",
-      "testedAt": "2026-08-03",
-      "sourceUrl": "https://www.marktechpost.com/2026/08/03/alibaba-qwen-releases-qwen3-8-max/"
-    },
-    {
       "name": "GPQA Diamond",
       "score": 92.6,
       "note": "vendor-run (Alibaba official release table); no independent measurements yet",
@@ -103,5 +102,6 @@
       "testedAt": "2026-08-03",
       "sourceUrl": "https://apidog.com/blog/qwen-3-8-benchmarks/"
     }
-  ]
+  ],
+  "benchmarksNote": "Also: OSWorld-Verified 86.1 (Aug 2026, vendor-run, Alibaba official release table)"
 }

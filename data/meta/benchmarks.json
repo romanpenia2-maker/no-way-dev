@@ -46,5 +46,43 @@
   "emptyBenchmarkNotes": {
     "glm-5-3": "GLM-5.2 anchors (vendor claims): SWE-bench Verified 84.2, SWE-bench Pro 62.1, GPQA 91.2, Terminal-Bench 2.1 81.0–82.7 (harness-dependent)",
     "grok-4-6": "AA Intelligence Index 61 (Aug 2026), xAI claims gains across 10 launch benchmarks vs Grok 4.5"
-  }
+  },
+  "caveats": [
+    "Qwen3.8-Max: every benchmark score is vendor-run (Alibaba official release table) — no independent measurements yet. WebDev arena rating is preliminary.",
+    "DeepSeek V4 Pro: benchmarks are Artificial Analysis data via a secondary source — the official model card was not directly read. Listed prices are off-peak; peak windows bill 2×.",
+    "Muse Spark 1.2: Terminal-Bench 2.1 and DeepSWE are Meta-reported; an independent Vals AI run scored 14/50 on a common scaffold — large discrepancy, treat vendor numbers with care.",
+    "Mistral Medium 3.5: both benchmark scores come from aggregators, unverified against an official model card.",
+    "GPT-5.6 Sol: GPQA, HLE and SWE-bench Pro figures come from Alibaba's vendor-run Qwen3.8-Max release table (cross-vendor); METR flagged high reward-hacking on the Terminal-Bench run.",
+    "Claude Opus 5 Terminal-Bench 2.1: figure from Meta's vendor table — unverified for Anthropic."
+  ],
+  "offTheBoards": [
+    {
+      "slug": "glm-5-3",
+      "text": "released Aug 14, 2026 — too fresh for any arena board; open weights promised ~2 weeks post-launch after a safety review. No verified benchmarks published yet — GLM-5.2 anchors (vendor claims): SWE-bench Verified 84.2, SWE-bench Pro 62.1, GPQA 91.2, Terminal-Bench 2.1 81.0–82.7 (harness-dependent)."
+    },
+    {
+      "slug": "mistral-medium-3-5",
+      "text": "not in the top-20 of any tracked arena slice."
+    },
+    {
+      "slug": "kimi-k3",
+      "text": "has no Vision board entry."
+    },
+    {
+      "slug": "gpt-5-6-sol",
+      "text": "is absent from Vision and Math."
+    },
+    {
+      "slug": "grok-4-6",
+      "text": "appears only on WebDev (preliminary)."
+    },
+    {
+      "slug": "gemini-3-1-pro",
+      "text": "skips WebDev and Coding."
+    },
+    {
+      "slug": "gemini-3-6-flash",
+      "text": "skips WebDev and Coding."
+    }
+  ]
 }

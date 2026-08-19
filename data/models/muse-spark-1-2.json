@@ -19,7 +19,13 @@
       "sourceUrl": "https://dev.meta.ai"
     }
   ],
-  "capabilities": ["text", "vision", "tools", "json-mode", "reasoning"],
+  "capabilities": [
+    "text",
+    "vision",
+    "tools",
+    "json-mode",
+    "reasoning"
+  ],
   "openWeights": false,
   "lastVerifiedAt": "2026-08-19",
   "arena": {
@@ -59,13 +65,7 @@
       "note": "Meta-reported; independent Vals AI run scored 14/50 on a common scaffold — large discrepancy",
       "testedAt": "2026-08-05",
       "sourceUrl": "https://codersera.com/blog/muse-spark-complete-guide-2026/"
-    },
-    {
-      "name": "DeepSWE v1.1",
-      "score": 59.3,
-      "note": "Meta-reported",
-      "testedAt": "2026-08-05",
-      "sourceUrl": "https://codersera.com/blog/muse-spark-complete-guide-2026/"
     }
-  ]
+  ],
+  "benchmarksNote": "Also: DeepSWE v1.1 59.3 (Aug 2026, Meta-reported)"
 }

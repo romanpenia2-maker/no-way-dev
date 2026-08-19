@@ -1,5 +1,9 @@
 "use client";
 
+// TODO(phase 3): wire to a real backend (Supabase/Resend) before rendering this
+// anywhere. Currently intentionally unused — the stub showed "Thanks!" without
+// sending anything, which was misleading.
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

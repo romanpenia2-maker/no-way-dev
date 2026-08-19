@@ -10,6 +10,11 @@ export function isOffPeakNote(note: string | undefined): boolean {
   return note !== undefined && /off-?peak/i.test(note);
 }
 
+/** 1-based row number, zero-padded: 0 -> "01", 11 -> "12". */
+export function formatOrdinal(index: number): string {
+  return String(index + 1).padStart(2, "0");
+}
+
 /** Format a USD price per 1M tokens, e.g. 1.25 -> "$1.25", 0.075 -> "$0.075" */
 export function formatPricePer1M(value: number): string {
   if (value >= 1) return `$${value.toFixed(2)}`;

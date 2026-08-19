@@ -80,6 +80,11 @@ export const modelSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "lastVerifiedAt must be YYYY-MM-DD"),
   arena: arenaSchema.optional(),
   benchmarks: z.array(benchmarkEntrySchema).optional(),
+  /**
+   * One-line rollup of scores outside the comparable set (exotic or vendor-only
+   * benchmarks, e.g. "Also: FrontierSWE 86.6 (Jul 2026, vendor); ...").
+   */
+  benchmarksNote: z.string().min(1).optional(),
 });
 
 export type Capability = z.infer<typeof capabilitySchema>;

@@ -1,13 +1,14 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { EmailCapture } from "@/components/email-capture";
+import { CheapestTable } from "@/components/cheapest-table";
+import { OffPeakFootnote } from "@/components/ui/off-peak-footnote";
+import { StatsStrip } from "@/components/ui/stats-strip";
 import { getAllModels, getAllPriceRows, getCheapestPriceRows } from "@/lib/data/models";
-import { getProviderName } from "@/lib/data/providers";
-import { formatDate, formatPricePer1M, formatTokens, isOffPeakNote } from "@/lib/utils";
+import { getProviderNameMap } from "@/lib/data/providers";
+import { formatDate, formatPricePer1M, formatTokens } from "@/lib/utils";
 import { JsonLd, websiteJsonLd } from "@/lib/seo/jsonld";
+import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "AI API Pricing Reference — compare LLM API prices across providers",
@@ -74,7 +75,6 @@ export default function HomePage() {
     { label: "Max context", value: formatTokens(maxContext), trend: "▲ tokens in one window" },
     { label: "Providers", value: String(providerCount).padStart(2, "0"), trend: "▲ official sources only" },
   ];
-  const hasOffPeak = cheapest.some((row) => isOffPeakNote(row.note));
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-12">
@@ -111,23 +111,7 @@ export default function HomePage() {
       </section>
 
       {/* Stats strip */}
-      <section className="grid grid-cols-2 border-b border-line sm:grid-cols-4">
-        {stats.map((s, i) => (
-          <div
-            key={s.label}
-            className={
-              "min-w-0 space-y-2 py-6 pr-4 " +
-              (i > 0 ? "border-l border-line pl-4 " : "") +
-              (i === 2 ? "max-sm:border-l-0 max-sm:pl-0 " : "") +
-              (i >= 2 ? "max-sm:border-t max-sm:border-line" : "")
-            }
-          >
-            <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">{s.label}</p>
-            <p className="font-mono text-3xl font-bold leading-none nums sm:text-4xl">{s.value}</p>
-            <p className="font-mono text-[11px] text-ink2">{s.trend}</p>
-          </div>
-        ))}
-      </section>
+      <StatsStrip items={stats} />
 
       {/* Top-5 cheapest */}
       <section className="border-b border-line py-12">
@@ -139,65 +123,9 @@ export default function HomePage() {
             updated {lastUpdated ? formatDate(lastUpdated) : "—"}
           </span>
         </div>
-        <Card className="row-fade">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10">#</TableHead>
-                <TableHead>Model</TableHead>
-                <TableHead className="hidden sm:table-cell">Provider</TableHead>
-                <TableHead className="text-right">Input $/1M</TableHead>
-                <TableHead className="text-right">Output $/1M</TableHead>
-                <TableHead className="hidden text-right sm:table-cell">Context</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {cheapest.map((row, i) => (
-                <TableRow key={`${row.modelSlug}-${row.pricingProvider}`} className="cursor-pointer">
-                  <TableCell className="font-mono text-xs text-ink2 nums">
-                    {String(i + 1).padStart(2, "0")}
-                  </TableCell>
-                  <TableCell>
-                    <Link
-                      href={`/models/${row.modelSlug}`}
-                      className="font-semibold underline-offset-4 hover:underline"
-                    >
-                      {row.modelName}
-                    </Link>{" "}
-                    <Badge variant={row.openWeights ? "outline" : "solid"} className="ml-1 align-middle">
-                      {row.openWeights ? "Open" : "Closed"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="hidden text-ink2 sm:table-cell">
-                    {getProviderName(row.pricingProvider)}
-                  </TableCell>
-                  <TableCell className="text-right font-mono font-bold nums">
-                    {formatPricePer1M(row.inputPer1M)}
-                    {isOffPeakNote(row.note) ? (
-                      <sup className="ml-0.5 font-bold" title="Off-peak rate; peak windows bill 2×">
-                        †
-                      </sup>
-                    ) : null}
-                  </TableCell>
-                  <TableCell className="text-right font-mono font-bold nums">
-                    {formatPricePer1M(row.outputPer1M)}
-                  </TableCell>
-                  <TableCell className="hidden text-right font-mono text-ink2 nums sm:table-cell">
-                    {formatTokens(row.contextTokens)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+        <CheapestTable rows={cheapest} providerNames={getProviderNameMap()} />
         <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2">
-          {hasOffPeak ? (
-            <p className="font-mono text-[11px] text-ink2">
-              <sup className="font-bold">†</sup> off-peak rate; peak windows bill 2×
-            </p>
-          ) : (
-            <span />
-          )}
+          <OffPeakFootnote rows={cheapest} />
           <Link
             href="/pricing"
             className="ml-auto font-mono text-xs uppercase tracking-[0.08em] hover:underline hover:underline-offset-4"
@@ -243,7 +171,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Email capture */}
+      {/* Release tracking — digest emails arrive in phase 3; for now, watch the repo */}
       <section className="py-12 sm:py-16">
         <div className="border border-ink p-6 sm:p-10">
           <div className="space-y-4">
@@ -252,9 +180,16 @@ export default function HomePage() {
               Price-change digest
             </h2>
             <p className="max-w-lg text-sm text-ink2">
-              One short email when a major provider changes API prices. No spam, unsubscribe anytime.
+              Email alerts land in a later phase. Until then, every data update is a commit — watch releases on
+              GitHub to catch price changes as they ship.
             </p>
-            <EmailCapture />
+            <a
+              href={`${site.github}/releases`}
+              rel="noopener"
+              className="inline-flex h-10 items-center border border-ink px-6 font-mono text-xs font-bold uppercase tracking-[0.08em] hover:bg-ink hover:text-paper"
+            >
+              Watch releases on GitHub →
+            </a>
           </div>
         </div>
       </section>

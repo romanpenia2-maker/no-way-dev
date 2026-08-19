@@ -1,64 +1,27 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable, type DataColumn } from "@/components/ui/data-table";
+import { StatsStrip } from "@/components/ui/stats-strip";
+import { ValueFootnote } from "@/components/ui/value-footnote";
+import { WeightsBadge } from "@/components/ui/weights-badge";
 import {
   ARENA_CATEGORY_ORDER,
   DEFAULT_ARENA_CATEGORY,
-  type BenchmarkValue,
   type CategorySlice,
   type LeaderboardRow,
 } from "@/lib/arena";
-import type { ArenaCategory } from "@data/schemas/model.schema";
-import { ExportButtons } from "@/components/export-buttons";
-import { toCsv, toMarkdown } from "@/lib/export";
+import { TRACKED_BENCHMARKS, type TrackedBenchmarkValue } from "@/lib/benchmark-keys";
+import { useSortable } from "@/lib/use-sortable";
 import { valueScore } from "@/lib/value";
+import type { ArenaCategory } from "@data/schemas/model.schema";
 import { cn, formatCompact, formatDate, formatPricePer1M, formatTokens } from "@/lib/utils";
-
-type SortKey = "model" | "score" | "value" | "rank" | "ci" | "swe" | "terminal" | "gpqa" | "hle";
-
-const columns: { key: SortKey; label: string; numeric?: boolean; hideBelowLg?: boolean }[] = [
-  { key: "model", label: "Model" },
-  { key: "score", label: "Arena score", numeric: true },
-  { key: "value", label: "Value †", numeric: true },
-  { key: "rank", label: "Rank", numeric: true },
-  { key: "ci", label: "CI ±", numeric: true, hideBelowLg: true },
-  { key: "swe", label: "SWE-bench Pro", numeric: true, hideBelowLg: true },
-  { key: "terminal", label: "Terminal-Bench", numeric: true, hideBelowLg: true },
-  { key: "gpqa", label: "GPQA", numeric: true, hideBelowLg: true },
-  { key: "hle", label: "HLE", numeric: true, hideBelowLg: true },
-];
 
 function tabLabel(cat: ArenaCategory, slices: Record<ArenaCategory, CategorySlice>): string {
   return cat === "text" ? "Overall" : slices[cat].meta.label;
-}
-
-function valueOf(row: LeaderboardRow, key: SortKey): number | undefined {
-  switch (key) {
-    case "score":
-      return row.arena.elo;
-    case "value":
-      return valueScore(row.arena.elo, row.priceIn, row.priceOut);
-    case "rank":
-      return row.arena.rank;
-    case "ci":
-      return row.arena.ci;
-    case "swe":
-      return row.sweBenchPro?.score;
-    case "terminal":
-      return row.terminalBench?.score;
-    case "gpqa":
-      return row.gpqa?.score;
-    case "hle":
-      return row.hle?.score;
-    default:
-      return undefined;
-  }
 }
 
 /** Focusable caveat marker with a CSS-only tooltip (hover on fine pointers, focus/tap elsewhere). */
@@ -75,24 +38,80 @@ function Caveat({ note }: { note: string }) {
   );
 }
 
-function ScoreCell({ value }: { value?: BenchmarkValue }) {
-  if (!value) {
-    return <TableCell className="hidden text-right font-mono text-ink2 nums lg:table-cell">—</TableCell>;
-  }
+function ScoreValue({ value }: { value?: TrackedBenchmarkValue }) {
+  if (!value) return <span className="text-ink2">—</span>;
   return (
-    <TableCell className="hidden text-right font-mono nums lg:table-cell">
+    <>
       {value.score.toFixed(1)}
       {value.note ? <Caveat note={value.note} /> : null}
-    </TableCell>
+    </>
   );
 }
 
-function Chevron({ open }: { open: boolean }) {
-  return (
-    <span data-open={open} className="chevron inline-block font-mono text-xs text-ink2" aria-hidden>
-      ▾
-    </span>
-  );
+function buildColumns(): DataColumn<LeaderboardRow>[] {
+  return [
+    {
+      key: "model",
+      label: "Model",
+      ascByDefault: true,
+      sortValue: (row) => row.modelName,
+      render: (row) => (
+        <>
+          <Link
+            href={`/models/${row.modelSlug}`}
+            className="font-semibold underline-offset-4 hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {row.modelName}
+          </Link>{" "}
+          <WeightsBadge open={row.openWeights} className="ml-1 align-middle" />
+          {row.arena.preliminary ? (
+            <Badge variant="secondary" className="ml-1 align-middle" title="Preliminary — low vote count">
+              P
+            </Badge>
+          ) : null}
+        </>
+      ),
+      exportValue: (row) => row.modelName,
+    },
+    {
+      key: "score",
+      label: "Arena score",
+      numeric: true,
+      sortValue: (row) => row.arena.elo,
+      render: (row) => <span className="font-bold">{row.arena.elo}</span>,
+      exportValue: (row) => row.arena.elo,
+    },
+    {
+      key: "value",
+      label: "Value †",
+      numeric: true,
+      sortValue: (row) => valueScore(row.arena.elo, row.priceIn, row.priceOut),
+      render: (row) => valueScore(row.arena.elo, row.priceIn, row.priceOut) ?? <span className="text-ink2">—</span>,
+      exportValue: (row) => valueScore(row.arena.elo, row.priceIn, row.priceOut) ?? "—",
+    },
+    {
+      key: "rank",
+      label: "Rank",
+      numeric: true,
+      ascByDefault: true,
+      sortValue: (row) => row.arena.rank,
+      render: (row) => <span className="text-ink2">{row.arena.rank}</span>,
+      exportValue: (row) => row.arena.rank,
+    },
+    ...TRACKED_BENCHMARKS.map(
+      (t): DataColumn<LeaderboardRow> => ({
+        key: t.key,
+        label: t.label,
+        numeric: true,
+        hideBelowLg: true,
+        sortValue: (row) => row.tracked[t.key]?.score,
+        tiebreak: (a, b) => b.arena.elo - a.arena.elo,
+        render: (row) => <ScoreValue value={row.tracked[t.key]} />,
+        exportValue: (row) => row.tracked[t.key]?.score.toFixed(1) ?? "—",
+      }),
+    ),
+  ];
 }
 
 function ExpandedPanel({
@@ -183,6 +202,9 @@ function ExpandedPanel({
             {emptyNote ? <p className="text-[13px] leading-5 text-ink2">{emptyNote}</p> : null}
           </div>
         )}
+        {row.benchmarksNote ? (
+          <p className="mt-3 font-mono text-[11px] leading-5 text-ink2">{row.benchmarksNote}</p>
+        ) : null}
       </div>
 
       {/* Quick facts */}
@@ -234,9 +256,14 @@ export function BenchmarksExplorer({
   const cat = initialCat;
   const slice = slices[cat];
 
-  const [sortKey, setSortKey] = useState<SortKey>("score");
-  const [sortAsc, setSortAsc] = useState(false);
+  const [columns] = useState(buildColumns);
+  const sort = useSortable(slice.rows, columns, "score", false);
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  const toggleExpanded = useCallback(
+    (key: string) => setExpanded((cur) => (cur === key ? null : key)),
+    [],
+  );
 
   // Close the open row when switching slices (its model may not be ranked there).
   useEffect(() => {
@@ -279,50 +306,8 @@ export function BenchmarksExplorer({
     [cat, selectTab],
   );
 
-  const sorted = useMemo(() => {
-    const dir = sortAsc ? 1 : -1;
-    return [...slice.rows].sort((a, b) => {
-      if (sortKey === "model") return a.modelName.localeCompare(b.modelName) * dir;
-      const av = valueOf(a, sortKey);
-      const bv = valueOf(b, sortKey);
-      if (av === undefined && bv === undefined) return b.arena.elo - a.arena.elo;
-      if (av === undefined) return 1;
-      if (bv === undefined) return -1;
-      return (av - bv) * dir;
-    });
-  }, [slice.rows, sortKey, sortAsc]);
-
-  function toggleSort(key: SortKey) {
-    if (key === sortKey) {
-      setSortAsc(!sortAsc);
-    } else {
-      setSortKey(key);
-      // model/rank are places or names (a→z, 1 = best); CI is an uncertainty margin (small = best);
-      // everything else sorts high → low
-      setSortAsc(key === "model" || key === "rank" || key === "ci");
-    }
-  }
-
-  // Export mirrors the active slice table: same columns, same visible order.
-  const exportHeader = ["Model", "Arena score", "Value", "Rank", "CI ±", "SWE-bench Pro", "Terminal-Bench", "GPQA", "HLE"];
-  const exportRows = useMemo(
-    () =>
-      sorted.map((row) => [
-        row.modelName,
-        row.arena.elo,
-        valueScore(row.arena.elo, row.priceIn, row.priceOut) ?? "—",
-        row.arena.rank,
-        row.arena.ci,
-        row.sweBenchPro ? row.sweBenchPro.score.toFixed(1) : "—",
-        row.terminalBench ? row.terminalBench.score.toFixed(1) : "—",
-        row.gpqa ? row.gpqa.score.toFixed(1) : "—",
-        row.hle ? row.hle.score.toFixed(1) : "—",
-      ]),
-    [sorted],
-  );
-
   const top = slice.rows[0];
-  const stats: { label: string; value: string; trend: string; small?: boolean }[] = [
+  const stats = [
     {
       label: "Models ranked",
       value: String(slice.rows.length).padStart(2, "0"),
@@ -364,226 +349,57 @@ export function BenchmarksExplorer({
 
       {/* Stats strip + table re-render per slice with a snappy fade/rise */}
       <div key={cat} className="slice-enter space-y-6">
-        <div className="grid grid-cols-2 border border-line sm:grid-cols-4">
-          {stats.map((s, i) => (
-            <div
-              key={s.label}
-              className={cn(
-                "min-w-0 space-y-2 px-4 py-5",
-                i > 0 && "border-l border-line",
-                i === 2 && "max-sm:border-l-0",
-                i >= 2 && "max-sm:border-t max-sm:border-line",
-              )}
-            >
-              <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">{s.label}</p>
-              <p
-                className={cn(
-                  "font-mono font-bold leading-none nums",
-                  s.small ? "text-lg sm:text-3xl" : "text-2xl sm:text-3xl",
-                )}
+        <StatsStrip items={stats} boxed />
+
+        <DataTable
+          rows={slice.rows}
+          columns={columns}
+          sort={sort}
+          rowKey={(row) => row.modelSlug}
+          rowLabel={(row) => row.modelName}
+          sortSelectId="benchmarks-sort"
+          expandable={{
+            openKey: expanded,
+            onToggle: toggleExpanded,
+            renderPanel: (row) => <ExpandedPanel row={row} active={cat} slices={slices} emptyNotes={emptyNotes} />,
+            mobilePanelExtra: (row) => (
+              <Link
+                href={`/models/${row.modelSlug}`}
+                className="font-mono text-xs uppercase tracking-[0.08em] underline underline-offset-4"
               >
-                {s.value}
-              </p>
-              <p className="font-mono text-[11px] text-ink2">{s.trend}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Mobile sort control (columns are not tappable on small screens) + export */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 md:hidden">
-            <label
-              htmlFor="benchmarks-sort"
-              className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2"
-            >
-              Sort by
-            </label>
-            <Select
-              id="benchmarks-sort"
-              value={sortKey}
-              onChange={(e) => toggleSort(e.target.value as SortKey)}
-              className="w-40"
-            >
-              {columns.map((col) => (
-                <option key={col.key} value={col.key}>
-                  {col.label}
-                </option>
-              ))}
-            </Select>
-            <button
-              type="button"
-              onClick={() => setSortAsc(!sortAsc)}
-              aria-label={sortAsc ? "Sort descending" : "Sort ascending"}
-              className="flex h-9 w-9 items-center justify-center border border-ink font-mono text-sm hover:bg-ink hover:text-paper"
-            >
-              {sortAsc ? "↑" : "↓"}
-            </button>
-          </div>
-          <div className="ml-auto">
-            <ExportButtons csv={toCsv(exportHeader, exportRows)} markdown={toMarkdown(exportHeader, exportRows)} />
-          </div>
-        </div>
-
-        {/* Desktop table */}
-        <Card className="hidden md:block">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10">#</TableHead>
-                {columns.map((col) => (
-                  <TableHead
-                    key={col.key}
-                    className={cn(
-                      "cursor-pointer select-none hover:text-ink",
-                      col.numeric && "text-right",
-                      col.hideBelowLg && "hidden lg:table-cell",
-                    )}
-                    onClick={() => toggleSort(col.key)}
-                    aria-sort={sortKey === col.key ? (sortAsc ? "ascending" : "descending") : undefined}
-                  >
-                    {col.label} {sortKey === col.key ? (sortAsc ? "↑" : "↓") : ""}
-                  </TableHead>
-                ))}
-                <TableHead className="w-8" aria-label="expand" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sorted.map((row, i) => {
-                const open = expanded === row.modelSlug;
-                return (
-                  <Fragment key={row.modelSlug}>
-                    <TableRow
-                      className="cursor-pointer"
-                      onClick={() => setExpanded(open ? null : row.modelSlug)}
-                    >
-                      <TableCell className="font-mono text-xs text-ink2 nums">
-                        {String(i + 1).padStart(2, "0")}
-                      </TableCell>
-                      <TableCell>
-                        <Link
-                          href={`/models/${row.modelSlug}`}
-                          className="font-semibold underline-offset-4 hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {row.modelName}
-                        </Link>{" "}
-                        <Badge variant={row.openWeights ? "outline" : "solid"} className="ml-1 align-middle">
-                          {row.openWeights ? "Open" : "Closed"}
-                        </Badge>
-                        {row.arena.preliminary ? (
-                          <Badge variant="secondary" className="ml-1 align-middle" title="Preliminary — low vote count">
-                            P
-                          </Badge>
-                        ) : null}
-                      </TableCell>
-                      <TableCell className="text-right font-mono font-bold nums">{row.arena.elo}</TableCell>
-                      <TableCell className="text-right font-mono nums">
-                        {valueScore(row.arena.elo, row.priceIn, row.priceOut) ?? (
-                          <span className="text-ink2">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-ink2 nums">{row.arena.rank}</TableCell>
-                      <TableCell className="hidden text-right font-mono text-ink2 nums lg:table-cell">
-                        {row.arena.ci}
-                      </TableCell>
-                      <ScoreCell value={row.sweBenchPro} />
-                      <ScoreCell value={row.terminalBench} />
-                      <ScoreCell value={row.gpqa} />
-                      <ScoreCell value={row.hle} />
-                      <TableCell className="text-right">
-                        <button
-                          aria-expanded={open}
-                          aria-controls={`panel-${row.modelSlug}`}
-                          aria-label={open ? `Collapse ${row.modelName}` : `Expand ${row.modelName}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setExpanded(open ? null : row.modelSlug);
-                          }}
-                          className="p-2 -m-1"
-                        >
-                          <Chevron open={open} />
-                        </button>
-                      </TableCell>
-                    </TableRow>
-                    <tr className={cn(open ? "border-b border-line" : "border-0")}>
-                      <td colSpan={columns.length + 2} className="p-0">
-                        <div className="expand-grid" data-open={open} id={`panel-${row.modelSlug}`}>
-                          <div className="expand-inner">
-                            <ExpandedPanel row={row} active={cat} slices={slices} emptyNotes={emptyNotes} />
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  </Fragment>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </Card>
-
-        {/* Mobile rows */}
-        <div className="md:hidden">
-          {sorted.map((row, i) => {
-            const open = expanded === row.modelSlug;
-            return (
-              <div key={row.modelSlug} className="border-b border-line py-3">
-                <button
-                  className="block w-full text-left"
-                  aria-expanded={open}
-                  aria-controls={`m-panel-${row.modelSlug}`}
-                  onClick={() => setExpanded(open ? null : row.modelSlug)}
-                >
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="font-semibold">
-                      {row.modelName}{" "}
-                      {row.arena.preliminary ? (
-                        <Badge variant="secondary" title="Preliminary — low vote count">
-                          P
-                        </Badge>
-                      ) : null}
-                    </span>
-                    <span className="flex items-baseline gap-2">
-                      <span className="font-mono text-xl font-bold nums">{row.arena.elo}</span>
-                      <Chevron open={open} />
-                    </span>
-                  </div>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-ink2 nums">
-                    <span>{String(i + 1).padStart(2, "0")}</span>
-                    <Badge variant={row.openWeights ? "outline" : "solid"}>
-                      {row.openWeights ? "Open" : "Closed"}
-                    </Badge>
-                    <span>rank {row.arena.rank}</span>
-                    <span>±{row.arena.ci}</span>
-                    <span>value {valueScore(row.arena.elo, row.priceIn, row.priceOut) ?? "—"}</span>
-                    {row.sweBenchPro ? <span>swe-pro {row.sweBenchPro.score.toFixed(1)}</span> : null}
-                    {row.terminalBench ? <span>tb {row.terminalBench.score.toFixed(1)}</span> : null}
-                  </div>
-                </button>
-                <div className="expand-grid" data-open={open} id={`m-panel-${row.modelSlug}`}>
-                  <div className="expand-inner">
-                    <div className="pt-3">
-                      <ExpandedPanel row={row} active={cat} slices={slices} emptyNotes={emptyNotes} />
-                    </div>
-                    <div className="mt-3 pb-1">
-                      <Link
-                        href={`/models/${row.modelSlug}`}
-                        className="font-mono text-xs uppercase tracking-[0.08em] underline underline-offset-4"
-                      >
-                        Model page →
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
+                Model page →
+              </Link>
+            ),
+          }}
+          mobileHead={(row) => ({
+            title: (
+              <>
+                {row.modelName}{" "}
+                {row.arena.preliminary ? (
+                  <Badge variant="secondary" title="Preliminary — low vote count">
+                    P
+                  </Badge>
+                ) : null}
+              </>
+            ),
+            value: <span className="font-mono text-xl font-bold nums">{row.arena.elo}</span>,
           })}
-        </div>
+          mobileMeta={(row) => (
+            <>
+              <WeightsBadge open={row.openWeights} />
+              <span>rank {row.arena.rank}</span>
+              <span>±{row.arena.ci}</span>
+              <span>value {valueScore(row.arena.elo, row.priceIn, row.priceOut) ?? "—"}</span>
+              {row.tracked["swe-pro"] ? <span>swe-pro {row.tracked["swe-pro"].score.toFixed(1)}</span> : null}
+              {row.tracked.terminal ? <span>tb {row.tracked.terminal.score.toFixed(1)}</span> : null}
+            </>
+          )}
+        />
 
         <p className="font-mono text-[11px] leading-5 text-ink2">
           — not measured / not published · <sup className="font-bold">†</sup> score has a caveat — focus or tap the
           marker for details, see footnotes below · <span className="font-bold">P</span> preliminary rating (low vote
-          count) · Value <sup className="font-bold">†</sup> = arena score per $1 of blended price (3:1 input/output
-          mix) · sort by any column · open a row for full arena &amp; benchmark data.
+          count) · <ValueFootnote /> · sort by any column · open a row for full arena &amp; benchmark data.
         </p>
       </div>
     </div>

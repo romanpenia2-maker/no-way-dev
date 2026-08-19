@@ -19,11 +19,8 @@ jobs:
       - name: Update npm (fix runner npm bug)
         run: npm install --global npm@latest
 
-      - name: Update npm (fix runner npm bug)
-        run: npm install --global npm@latest
-
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Lint
         run: npm run lint

@@ -19,6 +19,15 @@ export const benchmarksMetaSchema = z.object({
   }),
   /** What to show instead of an empty benchmark list, keyed by model slug. */
   emptyBenchmarkNotes: z.record(z.string().min(1)).optional(),
+  /** "Caveats †" footnotes on /benchmarks — per-model measurement warnings. */
+  caveats: z.array(z.string().min(1)),
+  /** "Off the boards" list: {slug, text} rendered as "Model name text". */
+  offTheBoards: z.array(
+    z.object({
+      slug: z.string().min(1),
+      text: z.string().min(1),
+    }),
+  ),
 });
 
 export type ArenaCategoryMeta = z.infer<typeof arenaCategoryMetaSchema>;

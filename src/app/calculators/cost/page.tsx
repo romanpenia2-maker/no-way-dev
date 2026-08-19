@@ -1,8 +1,8 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import { CostCalculator } from "@/components/cost-calculator";
 import { getAllPriceRows } from "@/lib/data/models";
 import { getProviderNameMap } from "@/lib/data/providers";
+import { parseCachePct, parsePositiveInt } from "@/lib/search-params";
 
 export const metadata: Metadata = {
   title: "LLM API Cost Calculator — estimate your monthly bill",
@@ -11,8 +11,21 @@ export const metadata: Metadata = {
   alternates: { canonical: "/calculators/cost" },
 };
 
-export default function CostCalculatorPage() {
+interface Props {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function CostCalculatorPage({ searchParams }: Props) {
   const rows = getAllPriceRows();
+  // SSR the scenario from ?rpd=&in=&out=&cache= (same pattern as /pricing and
+  // /benchmarks) so the first paint already shows the bars and the table.
+  const sp = await searchParams;
+  const initial = {
+    requestsPerDay: parsePositiveInt(sp.rpd, 10000),
+    inputTokens: parsePositiveInt(sp.in, 1000),
+    outputTokens: parsePositiveInt(sp.out, 500),
+    cachePct: parseCachePct(sp.cache),
+  };
 
   return (
     <div className="w-full px-4 py-12 sm:px-6 lg:px-12">
@@ -26,9 +39,7 @@ export default function CostCalculatorPage() {
           to share the scenario.
         </p>
       </div>
-      <Suspense fallback={null}>
-        <CostCalculator rows={rows} providerNames={getProviderNameMap()} />
-      </Suspense>
+      <CostCalculator rows={rows} providerNames={getProviderNameMap()} initial={initial} />
     </div>
   );
 }

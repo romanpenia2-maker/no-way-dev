@@ -1,5 +1,6 @@
 import type { ArenaCategory, ArenaEntry, BenchmarkEntry } from "@data/schemas/model.schema";
 import type { ArenaCategoryMeta } from "@data/schemas/benchmarks-meta.schema";
+import type { TrackedBenchmarkKey, TrackedBenchmarkValue } from "@/lib/benchmark-keys";
 
 /**
  * Client-safe arena types and constants — no node builtins here, this module is
@@ -40,10 +41,10 @@ export interface LeaderboardRow {
   /** All arena slices of this model, for the expandable panel. */
   arenaAll: Partial<Record<ArenaCategory, ArenaEntry>>;
   benchmarks: BenchmarkEntry[];
-  sweBenchPro?: BenchmarkValue;
-  terminalBench?: BenchmarkValue;
-  gpqa?: BenchmarkValue;
-  hle?: BenchmarkValue;
+  /** One-line note for scores outside the comparable set (exotic/vendor-only). */
+  benchmarksNote?: string;
+  /** Comparable benchmark columns, keyed by TRACKED_BENCHMARKS key. */
+  tracked: Partial<Record<TrackedBenchmarkKey, TrackedBenchmarkValue>>;
 }
 
 export interface CategorySlice {

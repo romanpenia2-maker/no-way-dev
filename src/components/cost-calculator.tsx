@@ -2,44 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable, type DataColumn } from "@/components/ui/data-table";
+import { OffPeakFootnote, OffPeakMark } from "@/components/ui/off-peak-footnote";
 import type { PriceRow } from "@/lib/data/models";
-import { formatUsd, isOffPeakNote } from "@/lib/utils";
+import { cn, formatUsd, isOffPeakNote } from "@/lib/utils";
 
 interface CostRow extends PriceRow {
   monthlyCost: number;
-}
-
-/** Cap URL-provided volumes so crafted links can't produce absurd/overflowing numbers. */
-const MAX_PARAM = 1e9;
-
-function parseNumberParam(searchParams: URLSearchParams | null, key: string, fallback: number) {
-  const raw = searchParams?.get(key);
-  const parsed = raw === null || raw === undefined ? NaN : Number(raw);
-  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
-  return Math.min(parsed, MAX_PARAM);
-}
-
-/** Cached-input share, percent 0–90 (0 is a valid value, unlike the volume params). */
-function parseCacheParam(searchParams: URLSearchParams | null): number {
-  const raw = searchParams?.get("cache");
-  const parsed = raw === null || raw === undefined ? NaN : Number(raw);
-  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 90) return 0;
-  return parsed;
 }
 
 /** Never render "$∞" — fall back to an em dash for non-finite amounts. */
@@ -47,20 +19,98 @@ function safeFormatUsd(value: number): string {
   return Number.isFinite(value) ? formatUsd(value) : "—";
 }
 
-const tickStyle = { fontSize: 10, fill: "var(--px2)", fontFamily: "var(--font-jbmono), monospace" };
+function buildResultColumns(providerNames: Record<string, string>): DataColumn<CostRow>[] {
+  return [
+    {
+      key: "model",
+      label: "Model",
+      sortValue: (row) => row.modelName,
+      render: (row) => (
+        <>
+          <Link href={`/models/${row.modelSlug}`} className="font-semibold underline-offset-4 hover:underline">
+            {row.modelName}
+          </Link>
+          {isOffPeakNote(row.note) ? <OffPeakMark /> : null}
+        </>
+      ),
+      exportValue: (row) => row.modelName,
+    },
+    {
+      key: "provider",
+      label: "Provider",
+      hideBelowSm: true,
+      sortValue: (row) => providerNames[row.pricingProvider] ?? row.pricingProvider,
+      render: (row) => <span className="text-ink2">{providerNames[row.pricingProvider] ?? row.pricingProvider}</span>,
+      exportValue: (row) => providerNames[row.pricingProvider] ?? row.pricingProvider,
+    },
+    {
+      key: "cost",
+      label: "Monthly cost",
+      numeric: true,
+      ascByDefault: true,
+      sortValue: (row) => row.monthlyCost,
+      render: (row) => <span className="font-bold">{safeFormatUsd(row.monthlyCost)}</span>,
+      exportValue: (row) => safeFormatUsd(row.monthlyCost),
+    },
+  ];
+}
+
+/** E-ink CSS bars: horizontal divs, width % of the max, mono figures on the right. */
+function CostBars({ rows, providerNames }: { rows: CostRow[]; providerNames: Record<string, string> }) {
+  const max = rows[0]?.monthlyCost ?? 0;
+  return (
+    <ul className="space-y-2" role="img" aria-label="Bar chart of the top cheapest models by monthly cost">
+      {rows.map((row, i) => {
+        const pct = max > 0 && Number.isFinite(row.monthlyCost) ? (row.monthlyCost / max) * 100 : 0;
+        return (
+          <li
+            key={`${row.modelSlug}-${row.pricingProvider}`}
+            className={cn("flex items-center gap-3", i >= 6 && "hidden sm:flex")}
+          >
+            <span className="w-36 min-w-0 shrink-0 truncate font-mono text-[11px] nums sm:w-48">
+              <span className="mr-1.5 text-ink2">{String(i + 1).padStart(2, "0")}</span>
+              {row.modelName}
+              <span className="ml-1 text-ink2">
+                @ {providerNames[row.pricingProvider] ?? row.pricingProvider}
+              </span>
+            </span>
+            <span className="h-4 flex-1" aria-hidden>
+              <span
+                className="block h-full bg-ink motion-safe:transition-[width]"
+                style={{ width: `${pct}%`, opacity: Math.max(0.4, 1 - i * 0.07) }}
+              />
+            </span>
+            <span className="w-20 shrink-0 text-right font-mono text-[13px] font-bold nums">
+              {safeFormatUsd(row.monthlyCost)}/mo
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+export interface CostScenario {
+  requestsPerDay: number;
+  inputTokens: number;
+  outputTokens: number;
+  cachePct: number;
+}
 
 export function CostCalculator({
   rows,
   providerNames,
+  initial,
 }: {
   rows: PriceRow[];
   providerNames: Record<string, string>;
+  /** Scenario parsed server-side from the URL (?rpd=&in=&out=&cache=). */
+  initial: CostScenario;
 }) {
-  const searchParams = useSearchParams();
-  const [requestsPerDay, setRequestsPerDay] = useState(() => parseNumberParam(searchParams, "rpd", 10000));
-  const [inputTokens, setInputTokens] = useState(() => parseNumberParam(searchParams, "in", 1000));
-  const [outputTokens, setOutputTokens] = useState(() => parseNumberParam(searchParams, "out", 500));
-  const [cachePct, setCachePct] = useState(() => parseCacheParam(searchParams));
+  const [requestsPerDay, setRequestsPerDay] = useState(initial.requestsPerDay);
+  const [inputTokens, setInputTokens] = useState(initial.inputTokens);
+  const [outputTokens, setOutputTokens] = useState(initial.outputTokens);
+  const [cachePct, setCachePct] = useState(initial.cachePct);
   const [copied, setCopied] = useState(false);
 
   const costs: CostRow[] = useMemo(() => {
@@ -82,8 +132,6 @@ export function CostCalculator({
   }, [rows, requestsPerDay, inputTokens, outputTokens, cachePct]);
 
   const top10 = costs.slice(0, 10);
-  const top6 = costs.slice(0, 6);
-  const hasOffPeak = costs.some((row) => isOffPeakNote(row.note));
 
   // Keep the URL in sync so the state is shareable/bookmarkable.
   useEffect(() => {
@@ -147,112 +195,20 @@ export function CostCalculator({
           </h2>
           <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">usd / month</span>
         </div>
-        {/* Mobile: compact top-6 list instead of the chart */}
-        <ul className="divide-y divide-line sm:hidden">
-          {top6.map((row, i) => (
-            <li
-              key={`${row.modelSlug}-${row.pricingProvider}`}
-              className="flex items-baseline justify-between gap-3 py-2 font-mono text-[13px] nums"
-            >
-              <span className="min-w-0 truncate">
-                <span className="mr-2 text-ink2">{String(i + 1).padStart(2, "0")}</span>
-                {row.modelName}
-                <span className="ml-1 text-[11px] text-ink2">@ {providerNames[row.pricingProvider] ?? row.pricingProvider}</span>
-              </span>
-              <span className="shrink-0 font-bold">{safeFormatUsd(row.monthlyCost)}/mo</span>
-            </li>
-          ))}
-        </ul>
-        <div className="hidden h-80 w-full sm:block">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={top10} margin={{ top: 4, right: 8, bottom: 60, left: 8 }}>
-              <CartesianGrid strokeDasharray="2 4" stroke="var(--line)" vertical={false} />
-              <XAxis
-                dataKey="modelName"
-                angle={-35}
-                textAnchor="end"
-                interval={0}
-                tick={tickStyle}
-                axisLine={{ stroke: "var(--px)" }}
-                tickLine={{ stroke: "var(--px)" }}
-              />
-              <YAxis
-                tick={tickStyle}
-                tickFormatter={(v: number) => `$${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toFixed(0)}`}
-                axisLine={{ stroke: "var(--px)" }}
-                tickLine={{ stroke: "var(--px)" }}
-              />
-              <Tooltip
-                cursor={{ fill: "var(--px)", fillOpacity: 0.08 }}
-                formatter={(value) => [safeFormatUsd(Number(value)), "Monthly cost"]}
-                labelFormatter={(_, payload) => {
-                  const item = payload?.[0]?.payload as CostRow | undefined;
-                  return item
-                    ? `${item.modelName} @ ${providerNames[item.pricingProvider] ?? item.pricingProvider}`
-                    : "";
-                }}
-                contentStyle={{
-                  backgroundColor: "var(--paper)",
-                  border: "1px solid var(--px)",
-                  borderRadius: 0,
-                  color: "var(--px)",
-                  fontFamily: "var(--font-jbmono), monospace",
-                  fontSize: 12,
-                }}
-              />
-              <Bar dataKey="monthlyCost" fill="var(--px)" radius={0}>
-                {top10.map((_, i) => (
-                  <Cell key={i} fillOpacity={Math.max(0.4, 1 - i * 0.07)} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        {/* CSS bars: top-10, collapsing to top-6 on mobile */}
+        <CostBars rows={top10} providerNames={providerNames} />
       </Card>
 
-      <Card className="row-fade">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10">#</TableHead>
-              <TableHead>Model</TableHead>
-              <TableHead className="hidden sm:table-cell">Provider</TableHead>
-              <TableHead className="text-right">Monthly cost</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {costs.map((row, i) => (
-              <TableRow key={`${row.modelSlug}-${row.pricingProvider}`}>
-                <TableCell className="font-mono text-xs text-ink2 nums">
-                  {String(i + 1).padStart(2, "0")}
-                </TableCell>
-                <TableCell className="font-semibold">
-                  <Link
-                    href={`/models/${row.modelSlug}`}
-                    className="underline-offset-4 hover:underline"
-                  >
-                    {row.modelName}
-                  </Link>
-                  {isOffPeakNote(row.note) ? (
-                    <sup className="ml-0.5 font-bold" title="Off-peak rate; peak windows bill 2×">
-                      †
-                    </sup>
-                  ) : null}
-                </TableCell>
-                <TableCell className="hidden text-ink2 sm:table-cell">
-                  {providerNames[row.pricingProvider] ?? row.pricingProvider}
-                </TableCell>
-                <TableCell className="text-right font-mono font-bold nums">{safeFormatUsd(row.monthlyCost)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        {hasOffPeak ? (
-          <p className="border-t border-line px-3 py-2 font-mono text-[11px] text-ink2">
-            <sup className="font-bold">†</sup> off-peak rate; peak windows bill 2×
-          </p>
-        ) : null}
-      </Card>
+      <DataTable
+        rows={costs}
+        columns={buildResultColumns(providerNames)}
+        rowKey={(row) => `${row.modelSlug}-${row.pricingProvider}`}
+        mobileMode="table"
+        sortable={false}
+        withExport={false}
+        sortSelectId="cost-sort"
+        cardFooter={<OffPeakFootnote rows={costs} className="border-t border-line px-3 py-2" />}
+      />
 
       <p className="font-mono text-[11px] leading-5 text-ink2">
         Excludes batch/volume discounts and tiered pricing (DeepSeek peak ×2, long-context tiers). Cached rate

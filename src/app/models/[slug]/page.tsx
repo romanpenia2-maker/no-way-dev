@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getAllModels, getModel } from "@/lib/data/models";
+import { getAllModels, getCheapestEntry, getModel } from "@/lib/data/models";
 import { ARENA_CATEGORY_ORDER, getBenchmarksMeta, getEmptyBenchmarkNotes } from "@/lib/data/benchmarks";
 import { getProvider } from "@/lib/data/providers";
 import { formatDate, formatPricePer1M, formatTokens } from "@/lib/utils";
@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const model = getModel(slug);
   if (!model) return {};
-  const cheapest = [...model.pricing].sort((a, b) => a.inputPer1M - b.inputPer1M)[0];
+  const cheapest = getCheapestEntry(model);
   const title = `${model.name} API Pricing: ${formatPricePer1M(cheapest.inputPer1M)}/1M input, ${formatPricePer1M(cheapest.outputPer1M)}/1M output`;
   return {
     title,
@@ -37,7 +37,7 @@ export default async function ModelPage({ params }: Props) {
   const model = getModel(slug);
   if (!model) notFound();
 
-  const cheapest = [...model.pricing].sort((a, b) => a.inputPer1M - b.inputPer1M)[0];
+  const cheapest = getCheapestEntry(model);
   const arenaMeta = getBenchmarksMeta();
   const emptyBenchmarkNote = getEmptyBenchmarkNotes()[model.slug];
   const arenaEntries = ARENA_CATEGORY_ORDER.flatMap((cat) => {
@@ -92,6 +92,11 @@ export default async function ModelPage({ params }: Props) {
             <p className="mt-2 font-mono text-2xl font-bold leading-none nums sm:text-3xl">
               {formatTokens(model.context.tokens)}
             </p>
+            {model.context.maxOutput ? (
+              <p className="mt-1.5 font-mono text-[11px] text-ink2 nums">
+                {formatTokens(model.context.maxOutput)} max output
+              </p>
+            ) : null}
           </div>
           <div className="bg-paper p-4">
             <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">Providers</p>
@@ -166,7 +171,7 @@ export default async function ModelPage({ params }: Props) {
         </ul>
       ) : null}
 
-      {arenaEntries.length > 0 || model.benchmarks?.length ? (
+      {arenaEntries.length > 0 || model.benchmarks?.length || model.benchmarksNote ? (
         <section className="mb-8">
           <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="font-display text-2xl font-bold uppercase leading-[0.94] tracking-[-0.02em]">
@@ -258,6 +263,11 @@ export default async function ModelPage({ params }: Props) {
                   ))}
                 </TableBody>
               </Table>
+              {model.benchmarksNote ? (
+                <p className="border-t border-line px-3 py-2 font-mono text-[11px] leading-5 text-ink2">
+                  {model.benchmarksNote}
+                </p>
+              ) : null}
             </Card>
           ) : (
             <div className="space-y-2 border border-line p-4">

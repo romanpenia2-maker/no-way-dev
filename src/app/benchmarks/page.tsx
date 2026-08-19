@@ -32,14 +32,10 @@ export const metadata: Metadata = {
   alternates: { canonical: "/benchmarks" },
 };
 
-const caveats = [
-  "Qwen3.8-Max: every benchmark score is vendor-run (Alibaba official release table) — no independent measurements yet. WebDev arena rating is preliminary.",
-  "DeepSeek V4 Pro: benchmarks are Artificial Analysis data via a secondary source — the official model card was not directly read. Listed prices are off-peak; peak windows bill 2×.",
-  "Muse Spark 1.2: Terminal-Bench 2.1 and DeepSWE are Meta-reported; an independent Vals AI run scored 14/50 on a common scaffold — large discrepancy, treat vendor numbers with care.",
-  "Mistral Medium 3.5: both benchmark scores come from aggregators, unverified against an official model card.",
-  "GPT-5.6 Sol: GPQA, HLE and SWE-bench Pro figures come from Alibaba's vendor-run Qwen3.8-Max release table (cross-vendor); METR flagged high reward-hacking on the Terminal-Bench run.",
-  "Claude Opus 5 Terminal-Bench 2.1: figure from Meta's vendor table — unverified for Anthropic.",
-];
+// Caveats and the "Off the boards" list live in data/meta/benchmarks.json —
+// refreshing a snapshot means editing only that file.
+const caveats = meta.caveats;
+const offTheBoards = meta.offTheBoards;
 
 interface Props {
   searchParams: Promise<{ cat?: string }>;
@@ -47,7 +43,6 @@ interface Props {
 
 export default async function BenchmarksPage({ searchParams }: Props) {
   const models = getAllModels();
-  const offBoards = models.filter((m) => !m.arena || Object.keys(m.arena).length === 0);
 
   // Server-render the leaderboard slice matching ?cat= so the HTML always
   // contains the active table (no client-side bailout on useSearchParams).
@@ -135,47 +130,21 @@ export default async function BenchmarksPage({ searchParams }: Props) {
               Off the boards
             </h3>
             <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-ink2">
-              {offBoards.map((m) => (
-                <li key={m.slug}>
-                  <Link href={`/models/${m.slug}`} className="font-semibold text-ink underline-offset-4 hover:underline">
-                    {m.name}
-                  </Link>{" "}
-                  —{" "}
-                  {m.slug === "glm-5-3"
-                    ? `released Aug 14, 2026 — too fresh for any arena board; open weights promised ~2 weeks post-launch after a safety review. No verified benchmarks published yet — ${emptyNotes[m.slug] ?? ""}`
-                    : emptyNotes[m.slug]
-                      ? `No verified benchmarks published yet — ${emptyNotes[m.slug]}`
-                      : "not in the top-20 of any tracked arena slice."}
-                </li>
-              ))}
-              <li>
-                <Link href="/models/kimi-k3" className="font-semibold text-ink underline-offset-4 hover:underline">
-                  Kimi K3
-                </Link>{" "}
-                has no Vision board entry;{" "}
-                <Link href="/models/gpt-5-6-sol" className="font-semibold text-ink underline-offset-4 hover:underline">
-                  GPT-5.6 Sol
-                </Link>{" "}
-                is absent from Vision and Math;{" "}
-                <Link href="/models/grok-4-6" className="font-semibold text-ink underline-offset-4 hover:underline">
-                  Grok 4.6
-                </Link>{" "}
-                appears only on WebDev (preliminary);{" "}
-                <Link
-                  href="/models/gemini-3-1-pro"
-                  className="font-semibold text-ink underline-offset-4 hover:underline"
-                >
-                  Gemini 3.1 Pro
-                </Link>{" "}
-                and{" "}
-                <Link
-                  href="/models/gemini-3-6-flash"
-                  className="font-semibold text-ink underline-offset-4 hover:underline"
-                >
-                  Gemini 3.6 Flash
-                </Link>{" "}
-                skip WebDev and Coding.
-              </li>
+              {offTheBoards.flatMap((entry) => {
+                const m = models.find((x) => x.slug === entry.slug);
+                if (!m) return [];
+                return [
+                  <li key={entry.slug}>
+                    <Link
+                      href={`/models/${m.slug}`}
+                      className="font-semibold text-ink underline-offset-4 hover:underline"
+                    >
+                      {m.name}
+                    </Link>{" "}
+                    {entry.text}
+                  </li>,
+                ];
+              })}
             </ul>
           </div>
         </div>
