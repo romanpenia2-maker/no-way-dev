@@ -15,17 +15,17 @@ export default function OpengraphImage() {
           flexDirection: "column",
           justifyContent: "center",
           padding: 80,
-          backgroundColor: "#faf8f5",
-          color: "#1c1917",
+          backgroundColor: "#e7e8e2",
+          color: "#1b1b16",
           fontFamily: "sans-serif",
         }}
       >
-        <div style={{ fontSize: 28, color: "#b45309", marginBottom: 16 }}>AI API pricing reference</div>
-        <div style={{ display: "flex", fontSize: 84, fontWeight: 700, letterSpacing: "-0.02em" }}>
-          no-way<span style={{ color: "#b45309" }}>.dev</span>
+        <div style={{ fontSize: 28, color: "#63635a", marginBottom: 16 }}>AI API pricing reference · e-ink</div>
+        <div style={{ display: "flex", fontSize: 84, fontWeight: 800, letterSpacing: "-0.03em", textTransform: "uppercase" }}>
+          no-way.dev
         </div>
-        <div style={{ fontSize: 32, color: "#57534e", marginTop: 24 }}>
-          Prices per 1M tokens · cost calculator · verified sources
+        <div style={{ fontSize: 32, color: "#63635a", marginTop: 24 }}>
+          Prices per 1M tokens · cost calculator · verified sources · sponsored none
         </div>
       </div>
     ),

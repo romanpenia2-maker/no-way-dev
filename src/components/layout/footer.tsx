@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { EmailCapture } from "@/components/email-capture";
 import { site } from "@/lib/site";
 
 const links = [
@@ -13,32 +12,37 @@ const links = [
 
 export function Footer() {
   return (
-    <footer className="border-t border-border">
-      <div className="mx-auto grid w-full max-w-content gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6">
-        <div className="space-y-4">
-          <p className="text-base font-semibold tracking-tight">
-            no-way<span className="text-accent">.dev</span>
+    <footer className="border-t-[1.5px] border-ink">
+      <div className="flex flex-col gap-8 px-4 py-10 sm:flex-row sm:items-start sm:justify-between sm:px-6 lg:px-12">
+        <div className="space-y-2">
+          <p className="font-display text-lg font-extrabold lowercase leading-none tracking-[-0.03em]">
+            no-way.dev
           </p>
-          <p className="max-w-sm text-sm text-muted-foreground">
-            Weekly-updated AI API pricing, verified against official sources. Get price-change digests in your inbox.
+          <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink2">
+            concept P «E-ink»
           </p>
-          <EmailCapture />
+          <p className="max-w-xs pt-2 text-sm text-ink2">
+            Weekly-updated AI API pricing, verified against official sources. Every number has a source.
+          </p>
         </div>
-        <nav className="grid grid-cols-2 gap-2 text-sm sm:justify-items-end" aria-label="Footer">
+        <nav
+          className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm sm:justify-items-end"
+          aria-label="Footer"
+        >
           {links.map((l) => (
-            <Link key={l.href} href={l.href} className="text-muted-foreground hover:text-foreground">
+            <Link key={l.href} href={l.href} className="text-ink2 underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline">
               {l.label}
             </Link>
           ))}
-          <a href={site.github} className="text-muted-foreground hover:text-foreground" rel="noopener">
+          <a href={site.github} rel="noopener" className="text-ink2 underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline">
             GitHub
           </a>
         </nav>
       </div>
-      <div className="border-t border-border">
-        <div className="mx-auto flex w-full max-w-content flex-col gap-1 px-4 py-4 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <span>© {new Date().getFullYear()} {site.name}. Dataset: CC BY-SA.</span>
-          <span>Sample data — always verify prices on official provider pages.</span>
+      <div className="border-t border-line">
+        <div className="flex flex-col gap-1 px-4 py-4 font-mono text-[11px] tracking-[0.04em] text-ink2 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-12">
+          <span>© {new Date().getFullYear()} {site.name} · dataset CC BY-SA · sample data — verify on official pages</span>
+          <span>not sponsored · data weekly</span>
         </div>
       </div>
     </footer>

@@ -36,8 +36,10 @@ export default async function ModelPage({ params }: Props) {
   const model = getModel(slug);
   if (!model) notFound();
 
+  const cheapest = [...model.pricing].sort((a, b) => a.inputPer1M - b.inputPer1M)[0];
+
   return (
-    <div className="mx-auto w-full max-w-content px-4 py-12 sm:px-6">
+    <div className="w-full px-4 py-12 sm:px-6 lg:px-12">
       <JsonLd
         data={[
           techArticleJsonLd(model),
@@ -49,29 +51,59 @@ export default async function ModelPage({ params }: Props) {
         ]}
       />
 
-      <div className="mb-8 space-y-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">{model.status.toUpperCase()}</Badge>
-          {model.openWeights ? <Badge>Open weights{model.license ? ` · ${model.license}` : ""}</Badge> : null}
-          <span className="text-sm text-muted-foreground">Released {formatDate(model.releasedAt)}</span>
+      <div className="mb-8 border-b border-line pb-8">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <Badge variant="secondary">{model.status}</Badge>
+          <Badge variant={model.openWeights ? "outline" : "solid"}>
+            {model.openWeights ? `Open${model.license ? ` · ${model.license}` : ""}` : "Closed"}
+          </Badge>
+          <span className="font-mono text-[11px] text-ink2 nums">released {formatDate(model.releasedAt)}</span>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{model.name} API pricing</h1>
-        <p className="max-w-2xl text-muted-foreground">
-          Prices per 1M tokens for {model.name} across {model.pricing.length} provider
-          {model.pricing.length > 1 ? "s" : ""}. Context window {formatTokens(model.context.tokens)} tokens
-          {model.context.maxOutput ? `, max output ${formatTokens(model.context.maxOutput)}` : ""}.
+        <h1 className="font-display text-4xl font-extrabold uppercase leading-[0.94] tracking-[-0.03em] sm:text-6xl">
+          {model.name}
+        </h1>
+        <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.08em] text-ink2">
+          API pricing · verified {formatDate(model.lastVerifiedAt)}
         </p>
+
+        {/* Числа — герои блока */}
+        <div className="mt-8 grid grid-cols-2 gap-px border border-line bg-line sm:grid-cols-4">
+          <div className="bg-paper p-4">
+            <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">Input from $/1M</p>
+            <p className="mt-2 font-mono text-2xl font-bold leading-none nums sm:text-3xl">
+              {formatPricePer1M(cheapest.inputPer1M)}
+            </p>
+          </div>
+          <div className="bg-paper p-4">
+            <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">Output from $/1M</p>
+            <p className="mt-2 font-mono text-2xl font-bold leading-none nums sm:text-3xl">
+              {formatPricePer1M(cheapest.outputPer1M)}
+            </p>
+          </div>
+          <div className="bg-paper p-4">
+            <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">Context</p>
+            <p className="mt-2 font-mono text-2xl font-bold leading-none nums sm:text-3xl">
+              {formatTokens(model.context.tokens)}
+            </p>
+          </div>
+          <div className="bg-paper p-4">
+            <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">Providers</p>
+            <p className="mt-2 font-mono text-2xl font-bold leading-none nums sm:text-3xl">
+              {String(model.pricing.length).padStart(2, "0")}
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-1.5">
         {model.capabilities.map((c) => (
-          <Badge key={c} variant="outline">
+          <Badge key={c} variant="secondary">
             {c}
           </Badge>
         ))}
       </div>
 
-      <Card className="mb-8">
+      <Card className="row-fade mb-8">
         <Table>
           <TableHeader>
             <TableRow>
@@ -88,17 +120,25 @@ export default async function ModelPage({ params }: Props) {
               const provider = getProvider(p.provider);
               return (
                 <TableRow key={p.provider}>
-                  <TableCell className="font-medium">{provider?.name ?? p.provider}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatPricePer1M(p.inputPer1M)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatPricePer1M(p.outputPer1M)}</TableCell>
-                  <TableCell className="text-right tabular-nums text-muted-foreground">
+                  <TableCell className="font-semibold">{provider?.name ?? p.provider}</TableCell>
+                  <TableCell className="text-right font-mono font-bold nums">
+                    {formatPricePer1M(p.inputPer1M)}
+                  </TableCell>
+                  <TableCell className="text-right font-mono font-bold nums">
+                    {formatPricePer1M(p.outputPer1M)}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-ink2 nums">
                     {p.cachedInputPer1M !== undefined ? formatPricePer1M(p.cachedInputPer1M) : "—"}
                   </TableCell>
-                  <TableCell className="hidden text-muted-foreground sm:table-cell">
+                  <TableCell className="hidden font-mono text-xs text-ink2 nums sm:table-cell">
                     {formatDate(p.updatedAt)}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
-                    <a href={p.sourceUrl} rel="noopener nofollow" className="text-accent hover:underline">
+                    <a
+                      href={p.sourceUrl}
+                      rel="noopener nofollow"
+                      className="font-mono text-xs underline underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline"
+                    >
                       official page ↗
                     </a>
                   </TableCell>
@@ -109,12 +149,18 @@ export default async function ModelPage({ params }: Props) {
         </Table>
       </Card>
 
-      <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border border-line p-4 text-sm text-ink2 sm:flex-row sm:items-center sm:justify-between">
         <span>
-          Last verified: <time dateTime={model.lastVerifiedAt}>{formatDate(model.lastVerifiedAt)}</time>. Prices
-          change — always confirm on the official page before budgeting.
+          Last verified:{" "}
+          <time dateTime={model.lastVerifiedAt} className="font-mono nums">
+            {formatDate(model.lastVerifiedAt)}
+          </time>
+          . Prices change — always confirm on the official page before budgeting.
         </span>
-        <Link href="/calculators/cost" className="shrink-0 text-accent hover:underline">
+        <Link
+          href="/calculators/cost"
+          className="shrink-0 font-mono text-xs uppercase tracking-[0.08em] text-ink hover:underline hover:underline-offset-4"
+        >
           Estimate monthly cost →
         </Link>
       </div>

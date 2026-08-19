@@ -3,89 +3,123 @@
 @tailwind utilities;
 
 /*
-  Design tokens — low-saturation warm palette.
-  Light: warm stone background, amber accent. Dark: warm near-black.
+  Design tokens — concept P «E-ink».
+  One paper, one ink. No colors beyond these tokens, no dark theme.
 */
 :root {
-  --background: 40 23% 97%;
-  --foreground: 24 10% 12%;
-  --card: 40 30% 99%;
-  --card-foreground: 24 10% 12%;
-  --muted: 36 14% 92%;
-  --muted-foreground: 28 7% 42%;
-  --accent: 33 90% 40%;
-  --accent-foreground: 40 30% 99%;
-  --border: 32 12% 86%;
-  --input: 32 12% 82%;
-  --ring: 33 90% 40%;
-  --radius: 0.5rem;
-}
-
-.dark {
-  --background: 24 9% 7%;
-  --foreground: 40 20% 94%;
-  --card: 26 8% 10%;
-  --card-foreground: 40 20% 94%;
-  --muted: 26 7% 15%;
-  --muted-foreground: 32 8% 62%;
-  --accent: 38 92% 52%;
-  --accent-foreground: 24 10% 8%;
-  --border: 26 7% 19%;
-  --input: 26 7% 24%;
-  --ring: 38 92% 52%;
+  --paper: #e7e8e2;      /* основной «лист» */
+  --backdrop: #b5b6ac;   /* фон под листом */
+  --px: #1b1b16;         /* основной текст, почти чёрный тёплый */
+  --px2: #63635a;        /* вторичный текст */
+  --line: #c9cac0;       /* разделители */
+  --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
 }
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-line;
   }
   html {
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-backdrop font-sans text-ink antialiased;
+  }
+  ::selection {
+    background: var(--px);
+    color: var(--paper);
   }
 }
 
-/* Minimal typography for MDX guides (no typography plugin) */
+@layer utilities {
+  /* Outline headline stroke — максимум раз на экран */
+  .text-outline {
+    color: transparent;
+    -webkit-text-stroke: 1.2px var(--px);
+  }
+  .nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Неподвижное зерно бумаги на весь viewport */
+.paper-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Единственная допустимая анимация: fade 400ms появления строк таблиц */
+@keyframes row-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.row-fade {
+  animation: row-fade 400ms ease both;
+}
+
+/* MDX guides typography — same ink, same rules */
 @layer components {
   .mdx-content {
-    @apply space-y-5 text-foreground/90;
+    @apply space-y-5 text-[15px] leading-7 text-ink;
   }
   .mdx-content h2 {
-    @apply mt-10 text-2xl font-semibold tracking-tight text-foreground;
+    @apply mt-10 font-display text-2xl font-bold uppercase leading-[0.94] tracking-[-0.02em];
   }
   .mdx-content h3 {
-    @apply mt-8 text-xl font-semibold tracking-tight text-foreground;
+    @apply mt-8 font-display text-xl font-bold uppercase leading-[0.94] tracking-[-0.02em];
   }
   .mdx-content p {
     @apply leading-7;
   }
   .mdx-content a {
-    @apply font-medium text-accent underline-offset-4 hover:underline;
+    @apply font-medium underline decoration-ink underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline;
   }
   .mdx-content ul {
-    @apply list-disc space-y-2 pl-6;
+    @apply list-disc space-y-2 pl-6 marker:text-ink2;
   }
   .mdx-content ol {
-    @apply list-decimal space-y-2 pl-6;
+    @apply list-decimal space-y-2 pl-6 marker:font-mono marker:text-ink2;
   }
   .mdx-content strong {
-    @apply font-semibold text-foreground;
+    @apply font-semibold text-ink;
   }
   .mdx-content code {
-    @apply rounded bg-muted px-1.5 py-0.5 text-sm;
+    @apply border border-line px-1.5 py-0.5 font-mono text-[0.85em];
   }
   .mdx-content pre {
-    @apply overflow-x-auto rounded-lg border border-border bg-muted p-4 text-sm;
+    @apply overflow-x-auto border border-ink p-4 font-mono text-sm;
   }
   .mdx-content pre code {
-    @apply bg-transparent p-0;
+    @apply border-0 p-0;
   }
   .mdx-content hr {
-    @apply border-border;
+    @apply border-line;
   }
   .mdx-content blockquote {
-    @apply border-l-2 border-accent pl-4 italic text-muted-foreground;
+    @apply border-l-2 border-ink pl-4 text-ink2;
+  }
+  .mdx-content table {
+    @apply w-full text-sm;
+  }
+  .mdx-content thead tr {
+    @apply border-b border-ink;
+  }
+  .mdx-content th {
+    @apply px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink2;
+  }
+  .mdx-content tbody tr {
+    @apply border-b border-line;
+  }
+  .mdx-content td {
+    @apply px-3 py-2 align-top font-mono text-[13px] nums;
   }
 }
