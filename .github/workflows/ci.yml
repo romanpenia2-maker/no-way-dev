@@ -16,6 +16,8 @@ jobs:
           node-version: 24
           cache: npm
 
+      # Runner images ship an npm with a known bug that intermittently breaks
+      # `npm ci`; upgrading npm first makes installs deterministic (docs/adr/0003).
       - name: Update npm (fix runner npm bug)
         run: npm install --global npm@latest
 
