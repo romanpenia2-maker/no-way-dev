@@ -1,20 +1,18 @@
 # no-way.dev
 
-Reference hub for AI API pricing: prices per 1M tokens across providers, an interactive cost calculator, and practical guides. Next.js 15 (App Router) + TypeScript strict + Tailwind CSS, data as git-tracked JSON validated with zod.
+Reference hub for LLM APIs: prices per 1M tokens across providers, arena ratings and benchmarks, a cost calculator, model comparison, and practical guides. Next.js 15 (App Router) + React 19 + TypeScript strict + Tailwind CSS; data is git-tracked JSON validated with zod.
 
-> ⚠️ **SAMPLE DATA** — the numbers in `data/` are realistic-looking placeholders for development.
-> **Verify every price against official provider pages before public launch.** Do not trust the
-> bundled values in production.
+> ⚠️ **SAMPLE DATA** — numbers in `data/` are realistic-looking placeholders for development.
+> Verify every price against official provider pages before public launch.
 
-**Working with AI agents on this repo? Read [`AGENTS.md`](./AGENTS.md) first** (rules), then [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) (product context, roadmap).
+**Working with AI agents on this repo? Read [`AGENTS.md`](./AGENTS.md) first** (rules), then [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) (product context, roadmap). Ops: [`docs/RUNBOOK.md`](./docs/RUNBOOK.md), data how-to: [`docs/DATA_CONTRACT.md`](./docs/DATA_CONTRACT.md).
 
 ## Stack
 
 - Next.js 15, React 19, TypeScript (strict)
-- Tailwind CSS with hand-written UI primitives in `src/components/ui/` (no shadcn CLI)
-- Data: JSON in `data/`, zod schemas in `data/schemas/`
+- Tailwind CSS with hand-written UI primitives in `src/components/ui/` (E-ink monochrome tokens; no dark theme)
+- Data: JSON in `data/`, zod schemas in `data/schemas/`, loaders in `src/lib/data/`
 - Guides: MDX in `src/content/guides/` (next-mdx-remote/rsc + gray-matter + remark-gfm)
-- recharts (charts), next-themes (dark mode)
 
 ## Setup
 
@@ -34,35 +32,34 @@ npm run dev                  # http://localhost:3000
 | `npm run lint` | ESLint (next/core-web-vitals) |
 | `npm run typecheck` | `tsc --noEmit`, strict |
 | `npm run validate-data` | Validate all `data/**/*.json` against zod schemas + cross-file checks |
-| `npm run update-prices` | Price-update bot (stub — see `scripts/bots/update-prices.ts`) |
+| `npm run update-prices` | Price-update bot (**stub** — see `scripts/bots/update-prices.ts`) |
 
 ## Environment variables
 
-Copy `.env.example` → `.env.local`. Everything is optional for the current phase:
+All optional for the current static build (see `.env.example`):
 
-- `NEXT_PUBLIC_SITE_URL` — canonical URL for metadata/sitemap (defaults to `https://no-way.dev`)
+- `NEXT_PUBLIC_SITE_URL` — canonical URL for metadata/sitemap (default `https://no-way.dev`)
 - `RESEND_API_KEY`, `RESEND_AUDIENCE_ID` — **phase 3**, email-capture form is currently a stub
-- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` — optional bot notifications
+- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` — deploy/notification bots (CI secrets)
 - `GITHUB_TOKEN` — local runs of data bots (CI uses the built-in token)
 
 ## Data
 
-- `data/models/{slug}.json` — one file per model: pricing entries (with `sourceUrl` + `updatedAt`), context window, capabilities. Schema: `data/schemas/model.schema.ts`.
+- `data/models/{slug}.json` — one file per model: pricing entries (with `sourceUrl` + `updatedAt`), context, capabilities, arena ratings, benchmarks. Schema: `data/schemas/model.schema.ts`.
 - `data/providers/{slug}.json` — one file per provider: website, pricing page, docs.
-- Always run `npm run validate-data` before committing data changes. Rules: one entity = one file, every number needs a source.
+- `data/meta/benchmarks.json` — arena snapshot metadata, caveats, off-the-boards notes.
+- Rules: one entity = one file, every number needs a source. Always run `npm run validate-data` before committing data changes. See `docs/DATA_CONTRACT.md`.
 
-## Automation
+## Automation & deploy
 
-- `.github/workflows/ci.yml` — lint + typecheck + validate-data + build on every PR/push.
-- `.github/workflows/update-prices.yml` — weekly (Mondays 06:00 UTC) price bot; opens a PR via `peter-evans/create-pull-request` when data changes.
-
-## Deploy
-
-Optimized for **Vercel**: import the repo, no extra config needed (`vercel.json` already adds `X-Robots-Tag: noindex` to `*.vercel.app` preview deployments). `main` → production (no-way.dev), every PR → preview.
+- `.github/workflows/ci.yml` — lint + typecheck + validate-data + build on PRs and pushes to `main`.
+- Vercel deploys run from Actions via CLI (`vercel build` + `vercel deploy --prebuilt`): `rc` → rc.no-way.dev, `main` → no-way.dev, PRs → previews. Vercel Git integration is off by design (`docs/adr/0001-vercel-cli-not-git-integration.md`).
+- `update-prices.yml` — weekly price bot (currently a stub; opens a PR when data changes).
+- `tg-bot.yml` — polls Telegram, turns owner messages into GitHub issues.
 
 ## Contributing
 
-Open an issue (templates provided) or a draft PR using the template in `.github/PULL_REQUEST_TEMPLATE.md`. Commit style: conventional commits (`feat:`, `fix:`, `chore(data):`, `content:`).
+Open an issue or a draft PR using the templates in `.github/`. Commit style: conventional commits (`feat:`, `fix:`, `chore(data):`, `content:`). PR descriptions and issues are in Russian (owner-facing).
 
 ## License
 
