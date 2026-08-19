@@ -1,54 +1,37 @@
-# AGENTS.md — правила для ИИ-агентов, работающих с этим репозиторием
+# AGENTS.md — rules for AI agents working on this repo
 
-> Этот файл читают все ИИ-агенты (Claude Code, Cursor, Codex и др.) перед любой работой.
-> Подробности о продукте — в `PROJECT_CONTEXT.md`. Схемы данных — в `docs/data-schemas.md`.
+Read this file before any work. Product context: `PROJECT_CONTEXT.md`. Ops incidents: `docs/RUNBOOK.md`. Adding data: `docs/DATA_CONTRACT.md`. PR descriptions and issues are written in Russian (owner-facing).
 
-## Что это за проект
+## Hard rules (violating any = rejected PR)
 
-**no-way.dev** — справочный хаб по AI-индустрии: цены API моделей, бенчмарки, подбор GPU под open-source модели, каталог инструментов, интерактивные калькуляторы и демо. Контент на английском. Стек: Next.js 15 (App Router) + TypeScript + Tailwind + shadcn/ui + MDX. Данные справочника — JSON-файлы в `/data` (git = source of truth). Пользовательские данные — Supabase.
+1. **Git flow.** Work happens on `rc`. `main` updates ONLY via merge `rc → main` after EXPLICIT owner approval in chat/PR. An agent never merges or pushes to `main` on its own; direct push to `main` is forbidden.
+2. **Revert trap.** `git revert X` followed by re-merging the same branch does NOT bring the feature back — the revert commit wins. Restoring needs a revert-of-revert or a fresh PR. Never revert a feature commit without owner escalation.
+3. **Workflows & `vercel.json`.** Files under `.github/workflows/` and `vercel.json` are edited ONLY by full-file rewrite — never sed/line patches. Validate YAML after every edit. Any workflow change goes in its own commit with a clear message.
+4. **Secrets.** Tokens/keys never appear in commits, issues, PRs, or logs — only GitHub Secrets / Vercel env. Never hand-edit `package-lock.json`; lockfile mirror URLs (non-`registry.npmjs.org`) are forbidden.
+5. **Data.** Every number needs `sourceUrl` + `updatedAt`. Run `npm run validate-data` before committing data. CI gates: `lint + typecheck + validate-data + build` must all pass.
+6. **Environment gotchas.** Runners need Node 24 + `npm i -g npm@latest` (runner npm bug). Vercel deploys via CLI `vercel build` + `vercel deploy --prebuilt` — Git integration is disabled by design. Vercel `has` conditions combine with AND.
 
-## Жёсткие правила (нарушение = отклонённый PR)
+## Repository map (verified against the code)
 
-1. **Никогда не коммить в `main`.** Только ветки `agent/<задача>` + draft PR.
-2. **Каждая цифра — с источником.** Цены и бенчмарки без `sourceUrl` и `updatedAt` запрещены. Никогда не выдумывай данные. Если данных нет — оставь поле пустым и напиши в PR, что нужно проверить вручную.
-3. **Одна сущность — один файл.** Модель/GPU/инструмент = отдельный JSON в `/data`. Никаких монолитных файлов данных.
-4. **Данные валидируются zod.** Перед коммитом запусти `npm run validate-data`. Невалидные данные не коммить.
-5. **SEO обязателен.** Каждая новая страница: `generateMetadata`, понятный H1, JSON-LD где уместно, alt у изображений. Страницы должны работать при SSG/ISR — без клиентского фетчинга критичного контента.
-6. **Дизайн-система.** Только Tailwind + shadcn/ui, существующие токены. Низконасыщенная палитра, тёплые тона, много whitespace. Никаких сине-фиолетовых градиентов. Никаких новых UI-библиотек.
-7. **Новые зависимости — только с обоснованием в описании PR.**
-8. **Не ломай публичные URL.** Изменение slug/роута = редирект в `next.config` + пометка в PR.
-9. **Даты.** Всегда используй реальную текущую дату (смотри системное время), а не даты из обучающих данных.
-10. **Модульность.** Правь только файлы, относящиеся к задаче. Кросс-рефакторинг «попутно» запрещён — отдельной задачей.
+- `src/app/` — App Router pages: `/pricing`, `/benchmarks`, `/compare`, `/calculators/cost`, `/guides/[slug]`, `/models/[slug]`, `/about`, `/methodology`; `layout.tsx`, `globals.css`, `robots.ts`, `sitemap.ts`, `opengraph-image.tsx`
+- `src/components/` — feature components (`pricing-table`, `benchmarks-table`, `cheapest-table`, `compare-explorer`, `cost-calculator`, `export-buttons`, `email-capture`); `layout/` (header, footer); `ui/` primitives (`data-table`, `table`, `badge`, `button`, `card`, `input`, `select`, `stats-strip`, `weights-badge`, `off-peak-footnote`, `value-footnote`)
+- `src/lib/` — `data/` (typed JSON loaders: models, providers, benchmarks), `arena.ts`, `benchmark-keys.ts`, `search-params.ts`, `pricing-state.ts`, `use-sortable.ts`, `export.ts`, `value.ts`, `utils.ts` (cn + price formatting), `site.ts`, `guides.ts`, `seo/jsonld.tsx`
+- `src/content/guides/` — MDX guides (frontmatter: title, description, publishedAt)
+- `data/models/` — one JSON per model (13 files); `data/providers/` — one per provider (10 files); `data/meta/benchmarks.json` — arena snapshot meta/caveats/offTheBoards; `data/schemas/` — zod schemas
+- `scripts/validate-data.ts` — zod + cross-file validation; `scripts/bots/update-prices.ts` — STUB, changes nothing
+- `.github/workflows/` — `ci.yml` (lint/typecheck/validate/build), `deploy-rc.yml`, `deploy-prod.yml`, `deploy-preview.yml` (Vercel CLI), `update-prices.yml` (weekly), `tg-bot.yml` (Telegram → issues)
+- `vercel.json` — `X-Robots-Tag: noindex` headers for `*.vercel.app` and `rc.no-way.dev`
 
-## Как выполнять задачу (workflow агента)
+## Conventions
 
-1. Прочитай `AGENTS.md` → `PROJECT_CONTEXT.md` → README компонента/модуля, который меняешь.
-2. Если задача размыта — сначала напиши спеку (3–10 строк) в issue и спроси, НЕ пиши код вслепую.
-3. Ветка `agent/idea-<N>-variant-<x>` → код → `npm run lint && npm run typecheck && npm run validate-data && npm run build` — всё зелёное, только потом PR.
-4. PR = draft, по шаблону `.github/PULL_REQUEST_TEMPLATE.md`. В описании: что сделано, какие страницы затронуты, скриншоты/описание UI-изменений, чеклист.
-5. После комментариев — правки в той же ветке.
+- TypeScript strict, no `any`. Server Components by default; `'use client'` only for interactivity.
+- kebab-case files, PascalCase components, conventional commits (`feat:`, `fix:`, `chore(data):`).
+- Design: E-ink monochrome tokens only (`--paper`, `--px`, `--px2`, `--line`, `--backdrop`); fonts Archivo/Inter/JetBrains Mono; NO dark theme, NO colors beyond tokens; hover = ink inversion; `tabular-nums` for numbers.
+- Components read data only via `src/lib/data/*`. Prices in USD per 1M tokens, formatted via `src/lib/utils.ts`.
+- No new dependencies without justification in the PR. Don't break public URLs (slug change = redirect + note in PR).
 
-## Структура репозитория (краткая карта)
+## Agent workflow
 
-- `src/app/(hub)/` — справочные страницы (models, compare, pricing, hardware, tools, guides)
-- `src/app/(interactive)/` — калькуляторы и демо
-- `src/components/` — ui / data / interactive / seo компоненты
-- `src/lib/data/` — типизированный доступ к данным (компоненты читают данные только отсюда)
-- `src/content/` — MDX (guides, changelog)
-- `data/` — JSON-справочники + zod-схемы в `data/schemas/`
-- `scripts/bots/` — боты обновления данных
-- `docs/` — ADR, гайдлайны контента, глоссарий
-
-## Конвенции
-
-- TypeScript strict; без `any` (кроме крайних случаев с комментарием).
-- Server Components по умолчанию; `'use client'` только для интерактива.
-- Именование файлов: kebab-case; компоненты — PascalCase.
-- Коммиты: conventional commits (`feat:`, `fix:`, `chore(data):`, `content:`).
-- Цены храним в USD, за 1M токенов; в UI форматируем через `lib/utils/format.ts`.
-
-## Что НЕ входит в полномочия агента
-
-- Мерж в main, изменение CI/CD, секретов, домена, биллинга.
-- Публикация/деплой в прод.
-- Изменение схем данных без отдельного обсуждения в issue.
+1. Read `AGENTS.md` → `PROJECT_CONTEXT.md` → the files you're changing.
+2. Branch off `rc`; make the change; run `npm run lint && npm run typecheck && npm run validate-data && npm run build` — all green.
+3. Open a draft PR to `rc` (template `.github/PULL_REQUEST_TEMPLATE.md`, body in Russian). Never merge yourself.

@@ -10,7 +10,7 @@
   --paper: #e7e8e2;      /* основной «лист» */
   --backdrop: #b5b6ac;   /* фон под листом */
   --px: #1b1b16;         /* основной текст, почти чёрный тёплый */
-  --px2: #63635a;        /* вторичный текст */
+  --px2: #55554c;        /* вторичный текст */
   --line: #c9cac0;       /* разделители */
   --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
 }
@@ -64,6 +64,110 @@
 }
 .row-fade {
   animation: row-fade 400ms ease both;
+}
+
+/* /benchmarks explorer: slice switch (fade + 5px rise) */
+@keyframes slice-enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.slice-enter {
+  animation: slice-enter 180ms ease-out both;
+}
+
+/* Expandable rows: grid-template-rows 0fr → 1fr trick (CSS-first, no JS height measuring) */
+.expand-grid {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 250ms ease-out;
+}
+.expand-grid[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.expand-grid > .expand-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* CSS-only tooltip for caveat markers — shows on hover (fine pointers) and focus/tap */
+.caveat-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 13rem;
+  padding: 0.5rem 0.625rem;
+  background: var(--px);
+  color: var(--paper);
+  font-family: var(--font-jbmono), monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  z-index: 60;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.caveat:hover .caveat-tip,
+.caveat:focus-visible .caveat-tip,
+.caveat:focus-within .caveat-tip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Chevron rotation on expanded rows */
+.chevron {
+  transition: transform 250ms ease-out;
+}
+.chevron[data-open="true"] {
+  transform: rotate(180deg);
+}
+
+/* Horizontal scroll strips: hide the scrollbar, keep the scroll */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Deep-link anchor flash: ink background fades out over 600ms (#row-<slug>) */
+@keyframes row-flash {
+  0% {
+    background-color: var(--px);
+    color: var(--paper);
+  }
+  100% {
+    background-color: transparent;
+    color: inherit;
+  }
+}
+.row-flash {
+  animation: row-flash 600ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row-fade,
+  .slice-enter {
+    animation: none;
+  }
+  .row-flash {
+    animation: none;
+    outline: 2px solid var(--px);
+  }
+  .expand-grid,
+  .chevron {
+    transition: none;
+  }
 }
 
 /* MDX guides typography — same ink, same rules */

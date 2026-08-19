@@ -1,21 +1,27 @@
 /**
  * Validates every JSON file in /data against the zod schemas in /data/schemas.
- * Also runs cross-file checks (e.g. model.provider must exist in data/providers).
+ * Also runs cross-file checks (e.g. model.provider must exist in data/providers),
+ * then HEAD-checks every sourceUrl (warnings only, unless --strict).
  *
- * Usage: npm run validate-data
+ * Usage: npm run validate-data [-- --strict]
  */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { modelSchema, type Model } from "../data/schemas/model.schema";
 import { providerSchema, type Provider } from "../data/schemas/provider.schema";
+import { benchmarksMetaSchema } from "../data/schemas/benchmarks-meta.schema";
+
+const strict = process.argv.includes("--strict");
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const modelsDir = path.join(root, "data", "models");
 const providersDir = path.join(root, "data", "providers");
+const metaDir = path.join(root, "data", "meta");
 
 let errors = 0;
 let checked = 0;
+const metaSourceUrls: string[] = [];
 
 function fail(file: string, message: string) {
   errors += 1;
@@ -53,6 +59,7 @@ for (const file of readJsonFiles(providersDir)) {
 
 // --- Models ----------------------------------------------------------------
 const slugs = new Set<string>();
+const validModels: Model[] = [];
 for (const file of readJsonFiles(modelsDir)) {
   const full = path.join(modelsDir, file);
   checked += 1;
@@ -76,6 +83,7 @@ for (const file of readJsonFiles(modelsDir)) {
     fail(`data/models/${file}`, `duplicate slug "${model.slug}"`);
   }
   slugs.add(model.slug);
+  validModels.push(model);
   if (!providers.has(model.provider)) {
     fail(`data/models/${file}`, `provider "${model.provider}" has no file in data/providers/`);
   }
@@ -86,8 +94,135 @@ for (const file of readJsonFiles(modelsDir)) {
   }
 }
 
+// --- Meta (arena snapshots etc.) ---------------------------------------------
+const metaSchemas: Record<string, (raw: unknown) => { success: boolean; error?: string }> = {
+  "benchmarks.json": (raw) => {
+    const parsed = benchmarksMetaSchema.safeParse(raw);
+    return parsed.success
+      ? { success: true }
+      : { success: false, error: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") };
+  },
+};
+if (fs.existsSync(metaDir)) {
+  for (const file of readJsonFiles(metaDir)) {
+    const full = path.join(metaDir, file);
+    checked += 1;
+    const validate = metaSchemas[file];
+    if (!validate) {
+      fail(`data/meta/${file}`, "no schema registered for this meta file");
+      continue;
+    }
+    try {
+      const raw = JSON.parse(fs.readFileSync(full, "utf8"));
+      const result = validate(raw);
+      if (!result.success) fail(`data/meta/${file}`, result.error ?? "invalid");
+      if (result.success && file === "benchmarks.json") {
+        metaSourceUrls.push(...Object.values(benchmarksMetaSchema.parse(raw).categories).map((c) => c.sourceUrl));
+      }
+    } catch (e) {
+      fail(`data/meta/${file}`, `invalid JSON: ${(e as Error).message}`);
+    }
+  }
+}
+
+// --- Link checker ------------------------------------------------------------
+// HEAD-checks every sourceUrl concurrently. Problems are warnings by default;
+// pass --strict to fail on them. Known bot-blockers (403 on openai.com / x.ai)
+// are allowlisted.
+const BOT_BLOCK_ALLOWLIST = ["openai.com", "x.ai"];
+
+async function checkSourceUrl(url: string): Promise<string | null> {
+  let current = url;
+  let redirects = 0;
+  for (;;) {
+    let res: Response;
+    try {
+      res = await fetch(current, {
+        method: "HEAD",
+        redirect: "manual",
+        signal: AbortSignal.timeout(10_000),
+        headers: { "user-agent": "no-way-dev-link-checker/1.0" },
+      });
+    } catch (e) {
+      return `request failed (${(e as Error).message})`;
+    }
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get("location");
+      redirects += 1;
+      if (!location) return "redirect without Location header";
+      if (redirects > 2) return `redirect chain too long (${redirects} redirects)`;
+      current = new URL(location, current).toString();
+      continue;
+    }
+    if (res.status === 405 || res.status === 501) {
+      // Server rejects HEAD — retry once with GET.
+      try {
+        const get = await fetch(current, {
+          method: "GET",
+          redirect: "manual",
+          signal: AbortSignal.timeout(10_000),
+          headers: { "user-agent": "no-way-dev-link-checker/1.0" },
+        });
+        if (get.status >= 300 && get.status < 400) continue;
+        if (get.status === 404 || get.status === 410) return `HTTP ${get.status}`;
+        if (get.status === 403 && BOT_BLOCK_ALLOWLIST.some((h) => new URL(current).hostname.endsWith(h))) return null;
+        if (get.status >= 400) return `HTTP ${get.status}`;
+        return null;
+      } catch (e) {
+        return `request failed (${(e as Error).message})`;
+      }
+    }
+    if (res.status === 404 || res.status === 410) return `HTTP ${res.status}`;
+    if (res.status === 403 && BOT_BLOCK_ALLOWLIST.some((h) => new URL(current).hostname.endsWith(h))) return null;
+    if (res.status >= 400) return `HTTP ${res.status}`;
+    return null;
+  }
+}
+
+const sourceUrls = new Set<string>(metaSourceUrls);
+for (const p of providers.values()) {
+  sourceUrls.add(p.websiteUrl).add(p.pricingUrl).add(p.apiDocsUrl);
+}
+for (const m of validModels) {
+  for (const p of m.pricing) sourceUrls.add(p.sourceUrl);
+  for (const b of m.benchmarks ?? []) sourceUrls.add(b.sourceUrl);
+}
+
 if (errors > 0) {
   console.error(`\n${errors} error(s) in ${checked} file(s). Fix before committing.`);
   process.exit(1);
 }
-console.log(`✓ ${checked} data file(s) valid (${providers.size} providers, ${slugs.size} models)`);
+
+async function runLinkCheck(): Promise<number> {
+  let linkWarnings = 0;
+  const linkResults = await Promise.all(
+    [...sourceUrls].map(async (url) => ({ url, problem: await checkSourceUrl(url) })),
+  );
+  for (const { url, problem } of linkResults) {
+    if (problem) {
+      linkWarnings += 1;
+      console.warn(`⚠ link: ${url} — ${problem}`);
+    }
+  }
+  if (strict && linkWarnings > 0) {
+    console.error(`\n✗ --strict: ${linkWarnings} source URL(s) failed the link check.`);
+    process.exit(1);
+  }
+  return linkWarnings;
+}
+
+runLinkCheck()
+  .then((linkWarnings) => {
+    if (errors > 0) {
+      console.error(`\n${errors} error(s) in ${checked} file(s). Fix before committing.`);
+      process.exit(1);
+    }
+    console.log(
+      `✓ ${checked} data file(s) valid (${providers.size} providers, ${slugs.size} models)` +
+        (linkWarnings > 0 ? ` · ${linkWarnings} link warning(s)` : ` · ${sourceUrls.size} source URLs OK`),
+    );
+  })
+  .catch((e) => {
+    console.error(`✗ link checker crashed: ${(e as Error).message}`);
+    process.exit(strict ? 1 : 0);
+  });

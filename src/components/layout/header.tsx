@@ -2,21 +2,36 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { href: "/pricing", label: "Pricing", match: "/pricing" },
+  { href: "/benchmarks", label: "Benchmarks", match: "/benchmarks" },
+  { href: "/compare", label: "Compare", match: "/compare" },
   { href: "/calculators/cost", label: "Calculator", match: "/calculators" },
-  { href: "/guides", label: "Guides", match: "/guides" },
   { href: "/about", label: "About", match: "/about" },
 ];
 
 export function Header() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const burgerRef = useRef<HTMLButtonElement>(null);
 
   const isActive = (match: string) => pathname === match || pathname.startsWith(`${match}/`);
+
+  // Esc closes the mobile menu and returns focus to the trigger.
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        burgerRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open]);
 
   return (
     <header className="sticky top-0 z-40 border-b-[1.5px] border-ink bg-paper">
@@ -55,7 +70,8 @@ export function Header() {
 
         <button
           type="button"
-          className="flex h-9 items-center border border-ink px-3 font-mono text-[10px] uppercase tracking-[0.08em] hover:bg-ink hover:text-paper sm:hidden"
+          ref={burgerRef}
+          className="flex h-11 items-center border border-ink px-3 font-mono text-[10px] uppercase tracking-[0.08em] hover:bg-ink hover:text-paper sm:hidden"
           aria-expanded={open}
           aria-controls="mobile-nav"
           onClick={() => setOpen((v) => !v)}

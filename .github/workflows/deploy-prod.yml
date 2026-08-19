@@ -16,6 +16,8 @@ jobs:
           node-version: 24
           cache: npm
 
+      # Runner images ship an npm with a known bug that intermittently breaks
+      # global installs; upgrading npm first makes this deterministic (docs/adr/0003).
       - name: Update npm (fix runner npm bug)
         run: npm install --global npm@latest
 
@@ -25,6 +27,9 @@ jobs:
       - name: Pull Vercel environment
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
+      # Vercel Git integration is disabled by design (docs/adr/0001): builds and
+      # deploys are driven from CI via the CLI, and --prebuilt ships exactly the
+      # artifact built in the previous step.
       - name: Build project
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 

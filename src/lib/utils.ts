@@ -5,6 +5,16 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/** True when a pricing note marks the listed rates as off-peak (e.g. DeepSeek). */
+export function isOffPeakNote(note: string | undefined): boolean {
+  return note !== undefined && /off-?peak/i.test(note);
+}
+
+/** 1-based row number, zero-padded: 0 -> "01", 11 -> "12". */
+export function formatOrdinal(index: number): string {
+  return String(index + 1).padStart(2, "0");
+}
+
 /** Format a USD price per 1M tokens, e.g. 1.25 -> "$1.25", 0.075 -> "$0.075" */
 export function formatPricePer1M(value: number): string {
   if (value >= 1) return `$${value.toFixed(2)}`;
@@ -36,4 +46,11 @@ export function formatDate(iso: string): string {
     day: "numeric",
     timeZone: "UTC",
   });
+}
+
+/** Format a big count compactly, e.g. 7779985 -> "7.78M", 8595 -> "8.6K" */
+export function formatCompact(value: number): string {
+  if (value >= 1_000_000) return `${+(value / 1_000_000).toFixed(2)}M`;
+  if (value >= 1_000) return `${+(value / 1_000).toFixed(1)}K`;
+  return String(value);
 }

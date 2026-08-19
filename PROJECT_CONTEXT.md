@@ -1,75 +1,56 @@
-# PROJECT_CONTEXT.md — контекст проекта no-way.dev
+# PROJECT_CONTEXT.md — product context for no-way.dev
 
-> Расширенное описание для ИИ-агентов и контрибьюторов. Краткие правила — в `AGENTS.md`.
+Extended context for AI agents and contributors. Hard rules: `AGENTS.md`. Incident ops: `docs/RUNBOOK.md`. Data how-to: `docs/DATA_CONTRACT.md`.
 
-## Миссия
+## Mission
 
-Дать разработчику/фаундеру ответ на практический вопрос об AI-стеке за 30 секунд:
-- «Какой API дешевле для моей задачи?» → цены + калькулятор
-- «На каком железе запустить open-source модель X?» → VRAM-таблицы + TCO
-- «Какая модель лучше под задачу Y?» → бенчмарки + сравнения
-- «Что попробовать из инструментов?» → курируемый каталог
+no-way.dev is a developer-facing reference for LLM APIs: current prices per 1M tokens across providers, LMArena-style arena ratings, benchmark scores, a cost calculator, model comparison, and practical guides. The promise: an answer to "which API for my task and budget" in 30 seconds, with every number traceable to a source.
 
-## Принципы продукта
+## Audience
 
-1. **Актуальность** — у каждой страницы с данными видна дата обновления; данные обновляются ботами еженедельно.
-2. **Проверяемость** — каждая цифра имеет источник (`sourceUrl`). Мы никогда не публикуем данные без источника.
-3. **Практичность** — не каталоги ради каталогов, а ответы «что взять под задачу и бюджет».
-4. **Открытость** — датасет в публичном git, лицензия CC BY-SA (цитирование с backlink).
-5. **Скорость** — SSG/ISR, Core Web Vitals в зелёной зоне, LCP < 2.5s.
+Indie developers, ML engineers, startup CTOs comparing LLM APIs. Language: English. Tone: technical, concrete — numbers over adjectives. The repo is worked on by AI agents; the owner reviews PRs in Russian.
 
-## Аудитория
+## Domain model (as it exists in the code today)
 
-Indie-разработчики, ML-инженеры, CTO стартапов, AI-энтузиасты. Язык — английский (планируется RU-локаль). Тон: технический, конкретный, без маркетингового пафоса, цифры важнее прилагательных. См. `docs/content-guidelines.md`.
-
-## Доменная модель
-
-| Сущность | Файл | Ключевые поля | Страницы |
+| Entity | File | Key fields | Pages |
 |---|---|---|---|
-| Model | `data/models/{slug}.json` | pricing[], benchmarks[], context, capabilities | `/models/{slug}`, `/compare/{a}-vs-{b}` |
-| Provider | `data/providers/{slug}.json` | pricing-политики, free tier | `/pricing`, `/providers/{slug}` |
-| GPU | `data/hardware/{slug}.json` | vram, bandwidth, fits[], cloud цены | `/hardware/{slug}` |
-| Tool | `data/tools/{slug}.json` | категория, pricing-модель, ревью | `/tools/{slug}` |
-| Guide | `src/content/guides/{slug}.mdx` | frontmatter: title, description, date | `/guides/{slug}` |
-| Changelog | `src/content/changelog/{yyyy}-W{ww}.mdx` | дайджест недели (бот) | `/changelog` |
+| Model (13) | `data/models/{slug}.json` | pricing[] (input/output/cached per 1M), context, capabilities, arena per category, benchmarks[], status, openWeights | `/models/[slug]`, `/pricing`, `/compare` |
+| Provider (10) | `data/providers/{slug}.json` | websiteUrl, pricingUrl, apiDocsUrl | linked from pricing tables |
+| Arena snapshot | `data/meta/benchmarks.json` | 6 categories (text, webdev, vision, coding, hard-prompts, math) with snapshotAt/votes/totalModels/sourceUrl; caveats; offTheBoards | `/benchmarks` |
+| Benchmark | inside model JSON `benchmarks[]` | name, score, testedAt, sourceUrl (+ `benchmarksNote` rollup) | `/benchmarks`, `/models/[slug]` |
+| Guide | `src/content/guides/{slug}.mdx` | frontmatter: title, description, publishedAt | `/guides`, `/guides/[slug]` |
 
-## Роадмап (состояние на август 2026)
+Schemas live in `data/schemas/` (zod) and are the source of truth. Loaders in `src/lib/data/` parse and cache JSON; pages never read `data/` directly.
 
-- Фаза 0: фундамент, CI, preview-флоу, AGENTS.md — **текущая**
-- Фаза 1: MVP — pricing hub, cost calculator, VRAM guide
-- Фаза 2: programmatic SEO (models/compare страницы), гайды, каталог инструментов
-- Фаза 3: Supabase — auth, комментарии, submissions, watchlist, дайджест, RU-локаль
-- Фаза 4: публичный API, виджеты, монетизация
+Recent refactor worth knowing: shared `ui/data-table.tsx`, `lib/use-sortable.ts`, `lib/search-params.ts`, `lib/benchmark-keys.ts`, and `WeightsBadge`/`StatsStrip`/`OffPeakFootnote`/`ValueFootnote` components deduplicate table/sort/URL-state logic. `recharts` was removed; `groq`/`openrouter` providers were removed.
 
-Приоритеты всегда сверяй с roadmap: не делай фичи фазы 3, пока не закрыта фаза 1.
+## SEO approach
 
-## Инфраструктура
+- All reference pages are SSG (static params generated from `data/`); no client-side fetching of critical content.
+- `generateMetadata` per page; numbers in titles/descriptions come from data, not hardcoded.
+- JSON-LD via `src/lib/seo/jsonld.tsx`; canonical URL from `NEXT_PUBLIC_SITE_URL` (`src/lib/site.ts`).
+- `src/app/sitemap.ts` builds the sitemap from data (static pages + models + guides); `robots.ts` standard.
+- Previews and staging must stay `noindex` — enforced by `vercel.json` headers (`has` host conditions for `*.vercel.app` and `rc.no-way.dev`) plus a live-check step in `deploy-rc.yml`.
 
-- **GitHub** — репо, PR-флоу, Actions (CI, боты данных, idea→preview pipeline)
-- **Vercel** — хостинг; `main` → прод (no-way.dev); каждая ветка/PR → preview (noindex)
-- **Supabase** — auth + user-data (с фазы 3); справочные данные там НЕ живут
-- **Telegram** — уведомления владельцу (preview готов, цены изменились)
+## Design principles
 
-## SEO-требования (критично)
+E-ink monochrome. Tokens only: `--paper` (background), `--px` / `--px2` (ink), `--line`, `--backdrop`. Fonts: Archivo (display), Inter (body), JetBrains Mono (data). NO dark theme, NO `next-themes`, NO colors beyond tokens. Hover = ink inversion. Numbers use `tabular-nums`. Data tables are the core UI pattern (shared `data-table` + `use-sortable`).
 
-- Все справочные страницы — SSG через `generateStaticParams` из `/data`, ISR revalidate 86400.
-- Metadata с цифрами в title/description (генерится из данных, не хардкод).
-- JSON-LD: `TechArticle`+`Dataset` на моделях, `SoftwareApplication` на инструментах, `FAQPage` на гайдах.
-- Sitemap сегментирован по типам страниц, `lastmod` из git.
-- Preview-окружения — `X-Robots-Tag: noindex` (уже настроено в `vercel.json`, не удалять).
+## Roadmap — existing vs planned
 
-## Дизайн-система (кратко)
+**Exists now:** 13-model / 10-provider registry, `/pricing` (sortable table, URL state, CSV export, filters), `/benchmarks` (arena category tabs + benchmark table), `/compare` (value score), `/calculators/cost`, guides (MDX, not in header nav), email-capture UI (stub), weekly `update-prices.yml` workflow, Telegram→issue bot, Vercel CLI deploys (rc/preview/prod).
 
-Tailwind + shadcn/ui. Низконасыщенная палитра, тёплые нейтральные фоны, акцент — один. Таблицы данных — главный UI-паттерн: сортировка, фильтры, sticky header, mobile → карточки. Тёмная тема обязательна (аудитория — разработчики). Графики — recharts. Никаких градиентных hero-баннеров; hero = данные/калькулятор.
+**Planned, NOT built (phase 3):**
+- Supabase user data (auth, watchlist, submissions). No Supabase code in the repo yet.
+- Email digest via Resend (`RESEND_*` env vars exist in `.env.example`; `email-capture.tsx` is a stub).
+- Price-update bots: `scripts/bots/update-prices.ts` is a STUB — it parses models, logs entries, and exits without modifying data. Real provider adapters are future work.
 
-## Глоссарий ключевых понятий
+Do not present planned items as existing, and don't build phase-3 features unprompted.
 
-- **1M tokens pricing** — цены нормализуем к $/1M токенов (input/output отдельно)
-- **Quant** — квантизация модели (fp16/int8/int4/gguf-q4), влияет на VRAM
-- **fits[]** — какие модели помещаются на данный GPU при какой квантизации
-- **Programmatic pages** — страницы, генерируемые из `/data` без ручного контента
-- **Price Watch** — пост/дайджест об изменениях цен, генерируется из git diff
+## Infrastructure
 
-## Куда писать вопросы
+- **GitHub:** repo, PR flow, Actions (CI gates, deploys, price bot, Telegram bot).
+- **Vercel:** hosting, deployed via CLI from Actions (Git integration intentionally off — see `docs/adr/0001`). `main` → no-way.dev, `rc` → rc.no-way.dev, PRs → previews.
+- **Telegram:** owner notifications on every deploy.
 
-Неясная задача → комментарий в issue с вопросом владельцу, код не писать до ответа.
+Questions on unclear tasks → comment on the issue and wait for the owner; don't code blind.

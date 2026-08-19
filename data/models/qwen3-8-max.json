@@ -1,0 +1,107 @@
+{
+  "slug": "qwen3-8-max",
+  "name": "Qwen3.8-Max",
+  "provider": "alibaba",
+  "releasedAt": "2026-08-03",
+  "status": "ga",
+  "context": {
+    "tokens": 1000000
+  },
+  "pricing": [
+    {
+      "provider": "alibaba",
+      "inputPer1M": 2,
+      "outputPer1M": 6,
+      "cachedInputPer1M": 0.25,
+      "note": "2.4T MoE, ~95B active; weights promised but not published as of Aug 19, 2026",
+      "updatedAt": "2026-08-19",
+      "sourceUrl": "https://www.alibabacloud.com/help/en/model-studio/models"
+    }
+  ],
+  "capabilities": [
+    "text",
+    "vision",
+    "tools",
+    "json-mode",
+    "reasoning"
+  ],
+  "openWeights": false,
+  "lastVerifiedAt": "2026-08-19",
+  "arena": {
+    "text": {
+      "elo": 1491,
+      "rank": 8,
+      "ci": 8,
+      "votes": 7004,
+      "boardName": "qwen3.8-max"
+    },
+    "webdev": {
+      "elo": 1667,
+      "rank": 3,
+      "ci": 13,
+      "votes": 2855,
+      "boardName": "qwen3.8-max",
+      "preliminary": true
+    },
+    "vision": {
+      "elo": 1301,
+      "rank": 2,
+      "ci": 9,
+      "votes": 5344,
+      "boardName": "qwen3.8-max"
+    },
+    "coding": {
+      "elo": 1529,
+      "rank": 13,
+      "ci": 13,
+      "votes": 2146,
+      "boardName": "qwen3.8-max"
+    },
+    "hard-prompts": {
+      "elo": 1516,
+      "rank": 8,
+      "ci": 9,
+      "votes": 4807,
+      "boardName": "qwen3.8-max"
+    },
+    "math": {
+      "elo": 1513,
+      "rank": 6,
+      "ci": 31,
+      "votes": 353,
+      "boardName": "qwen3.8-max",
+      "note": "small sample"
+    }
+  },
+  "benchmarks": [
+    {
+      "name": "Terminal-Bench 2.1",
+      "score": 86.6,
+      "note": "vendor-run (Alibaba official release table); no independent measurements yet",
+      "testedAt": "2026-08-03",
+      "sourceUrl": "https://www.marktechpost.com/2026/08/03/alibaba-qwen-releases-qwen3-8-max/"
+    },
+    {
+      "name": "SWE-bench Pro",
+      "score": 67.7,
+      "note": "vendor-run (Alibaba official release table); no independent measurements yet",
+      "testedAt": "2026-08-03",
+      "sourceUrl": "https://www.marktechpost.com/2026/08/03/alibaba-qwen-releases-qwen3-8-max/"
+    },
+    {
+      "name": "GPQA Diamond",
+      "score": 92.6,
+      "note": "vendor-run (Alibaba official release table); no independent measurements yet",
+      "testedAt": "2026-08-03",
+      "sourceUrl": "https://apidog.com/blog/qwen-3-8-benchmarks/"
+    },
+    {
+      "name": "Humanity's Last Exam",
+      "score": 43.6,
+      "note": "vendor-run (Alibaba official release table); no independent measurements yet",
+      "testedAt": "2026-08-03",
+      "sourceUrl": "https://apidog.com/blog/qwen-3-8-benchmarks/"
+    }
+  ],
+  "benchmarksNote": "Also: OSWorld-Verified 86.1 (Aug 2026, vendor-run, Alibaba official release table)"
+}

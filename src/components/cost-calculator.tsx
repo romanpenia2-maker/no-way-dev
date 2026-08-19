@@ -1,62 +1,144 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable, type DataColumn } from "@/components/ui/data-table";
+import { OffPeakFootnote, OffPeakMark } from "@/components/ui/off-peak-footnote";
 import type { PriceRow } from "@/lib/data/models";
-import { formatUsd } from "@/lib/utils";
+import { cn, formatUsd, isOffPeakNote } from "@/lib/utils";
 
 interface CostRow extends PriceRow {
   monthlyCost: number;
 }
 
-function parseNumberParam(searchParams: URLSearchParams | null, key: string, fallback: number) {
-  const raw = searchParams?.get(key);
-  const parsed = raw === null || raw === undefined ? NaN : Number(raw);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+/** Never render "$∞" — fall back to an em dash for non-finite amounts. */
+function safeFormatUsd(value: number): string {
+  return Number.isFinite(value) ? formatUsd(value) : "—";
 }
 
-const tickStyle = { fontSize: 10, fill: "var(--px2)", fontFamily: "var(--font-jbmono), monospace" };
+function buildResultColumns(providerNames: Record<string, string>): DataColumn<CostRow>[] {
+  return [
+    {
+      key: "model",
+      label: "Model",
+      sortValue: (row) => row.modelName,
+      render: (row) => (
+        <>
+          <Link href={`/models/${row.modelSlug}`} className="font-semibold underline-offset-4 hover:underline">
+            {row.modelName}
+          </Link>
+          {isOffPeakNote(row.note) ? <OffPeakMark /> : null}
+        </>
+      ),
+      exportValue: (row) => row.modelName,
+    },
+    {
+      key: "provider",
+      label: "Provider",
+      hideBelowSm: true,
+      sortValue: (row) => providerNames[row.pricingProvider] ?? row.pricingProvider,
+      render: (row) => <span className="text-ink2">{providerNames[row.pricingProvider] ?? row.pricingProvider}</span>,
+      exportValue: (row) => providerNames[row.pricingProvider] ?? row.pricingProvider,
+    },
+    {
+      key: "cost",
+      label: "Monthly cost",
+      numeric: true,
+      ascByDefault: true,
+      sortValue: (row) => row.monthlyCost,
+      render: (row) => <span className="font-bold">{safeFormatUsd(row.monthlyCost)}</span>,
+      exportValue: (row) => safeFormatUsd(row.monthlyCost),
+    },
+  ];
+}
 
-export function CostCalculator({ rows }: { rows: PriceRow[] }) {
-  const searchParams = useSearchParams();
-  const [requestsPerDay, setRequestsPerDay] = useState(() => parseNumberParam(searchParams, "rpd", 10000));
-  const [inputTokens, setInputTokens] = useState(() => parseNumberParam(searchParams, "in", 1000));
-  const [outputTokens, setOutputTokens] = useState(() => parseNumberParam(searchParams, "out", 500));
+/** E-ink CSS bars: horizontal divs, width % of the max, mono figures on the right. */
+function CostBars({ rows, providerNames }: { rows: CostRow[]; providerNames: Record<string, string> }) {
+  const max = rows[0]?.monthlyCost ?? 0;
+  return (
+    <ul className="space-y-2" role="img" aria-label="Bar chart of the top cheapest models by monthly cost">
+      {rows.map((row, i) => {
+        const pct = max > 0 && Number.isFinite(row.monthlyCost) ? (row.monthlyCost / max) * 100 : 0;
+        return (
+          <li
+            key={`${row.modelSlug}-${row.pricingProvider}`}
+            className={cn("flex items-center gap-3", i >= 6 && "hidden sm:flex")}
+          >
+            <span className="w-36 min-w-0 shrink-0 truncate font-mono text-[11px] nums sm:w-48">
+              <span className="mr-1.5 text-ink2">{String(i + 1).padStart(2, "0")}</span>
+              {row.modelName}
+              <span className="ml-1 text-ink2">
+                @ {providerNames[row.pricingProvider] ?? row.pricingProvider}
+              </span>
+            </span>
+            <span className="h-4 flex-1" aria-hidden>
+              <span
+                className="block h-full bg-ink motion-safe:transition-[width]"
+                style={{ width: `${pct}%`, opacity: Math.max(0.4, 1 - i * 0.07) }}
+              />
+            </span>
+            <span className="w-20 shrink-0 text-right font-mono text-[13px] font-bold nums">
+              {safeFormatUsd(row.monthlyCost)}/mo
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+export interface CostScenario {
+  requestsPerDay: number;
+  inputTokens: number;
+  outputTokens: number;
+  cachePct: number;
+}
+
+export function CostCalculator({
+  rows,
+  providerNames,
+  initial,
+}: {
+  rows: PriceRow[];
+  providerNames: Record<string, string>;
+  /** Scenario parsed server-side from the URL (?rpd=&in=&out=&cache=). */
+  initial: CostScenario;
+}) {
+  const [requestsPerDay, setRequestsPerDay] = useState(initial.requestsPerDay);
+  const [inputTokens, setInputTokens] = useState(initial.inputTokens);
+  const [outputTokens, setOutputTokens] = useState(initial.outputTokens);
+  const [cachePct, setCachePct] = useState(initial.cachePct);
   const [copied, setCopied] = useState(false);
 
   const costs: CostRow[] = useMemo(() => {
     const monthlyRequests = requestsPerDay * 30;
+    const cacheShare = cachePct / 100;
     return rows
-      .map((row) => ({
-        ...row,
-        monthlyCost:
-          (monthlyRequests * inputTokens * row.inputPer1M) / 1_000_000 +
-          (monthlyRequests * outputTokens * row.outputPer1M) / 1_000_000,
-      }))
+      .map((row) => {
+        // Cached share of input bills at the cached rate where one is published.
+        const effectiveInput =
+          (1 - cacheShare) * row.inputPer1M + cacheShare * (row.cachedInputPer1M ?? row.inputPer1M);
+        return {
+          ...row,
+          monthlyCost:
+            (monthlyRequests * inputTokens * effectiveInput) / 1_000_000 +
+            (monthlyRequests * outputTokens * row.outputPer1M) / 1_000_000,
+        };
+      })
       .sort((a, b) => a.monthlyCost - b.monthlyCost);
-  }, [rows, requestsPerDay, inputTokens, outputTokens]);
+  }, [rows, requestsPerDay, inputTokens, outputTokens, cachePct]);
 
   const top10 = costs.slice(0, 10);
 
   // Keep the URL in sync so the state is shareable/bookmarkable.
   useEffect(() => {
     const params = new URLSearchParams({ rpd: String(requestsPerDay), in: String(inputTokens), out: String(outputTokens) });
+    if (cachePct > 0) params.set("cache", String(cachePct));
     window.history.replaceState(null, "", `?${params.toString()}`);
-  }, [requestsPerDay, inputTokens, outputTokens]);
+  }, [requestsPerDay, inputTokens, outputTokens, cachePct]);
 
   const share = useCallback(async () => {
     try {
@@ -68,24 +150,29 @@ export function CostCalculator({ rows }: { rows: PriceRow[] }) {
     }
   }, []);
 
-  const fields: { label: string; value: number; set: (n: number) => void }[] = [
-    { label: "Requests / day", value: requestsPerDay, set: setRequestsPerDay },
-    { label: "Avg input tokens / request", value: inputTokens, set: setInputTokens },
-    { label: "Avg output tokens / request", value: outputTokens, set: setOutputTokens },
+  const fields: { label: string; value: number; set: (n: number) => void; min: number; max?: number }[] = [
+    { label: "Requests / day", value: requestsPerDay, set: setRequestsPerDay, min: 1 },
+    { label: "Avg input tokens / request", value: inputTokens, set: setInputTokens, min: 1 },
+    { label: "Avg output tokens / request", value: outputTokens, set: setOutputTokens, min: 1 },
+    { label: "Cached input %", value: cachePct, set: setCachePct, min: 0, max: 90 },
   ];
 
   return (
     <div className="space-y-8">
       <Card className="p-4 sm:p-6">
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {fields.map((f) => (
             <label key={f.label} className="space-y-1.5">
               <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">{f.label}</span>
               <Input
                 type="number"
-                min={1}
+                min={f.min}
+                max={f.max}
                 value={f.value}
-                onChange={(e) => f.set(Math.max(1, Number(e.target.value) || 1))}
+                onChange={(e) => {
+                  const n = Number(e.target.value) || 0;
+                  f.set(Math.min(f.max ?? Infinity, Math.max(f.min, n)));
+                }}
               />
             </label>
           ))}
@@ -104,79 +191,29 @@ export function CostCalculator({ rows }: { rows: PriceRow[] }) {
       <Card className="p-4 sm:p-6">
         <div className="mb-4 flex items-baseline justify-between gap-2">
           <h2 className="font-display text-lg font-bold uppercase leading-[0.94] tracking-[-0.02em]">
-            Top 10 cheapest — monthly cost
+            Top cheapest — monthly cost
           </h2>
           <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">usd / month</span>
         </div>
-        <div className="h-80 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={top10} margin={{ top: 4, right: 8, bottom: 60, left: 8 }}>
-              <CartesianGrid strokeDasharray="2 4" stroke="var(--line)" vertical={false} />
-              <XAxis
-                dataKey="modelName"
-                angle={-35}
-                textAnchor="end"
-                interval={0}
-                tick={tickStyle}
-                axisLine={{ stroke: "var(--px)" }}
-                tickLine={{ stroke: "var(--px)" }}
-              />
-              <YAxis
-                tick={tickStyle}
-                tickFormatter={(v: number) => `$${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toFixed(0)}`}
-                axisLine={{ stroke: "var(--px)" }}
-                tickLine={{ stroke: "var(--px)" }}
-              />
-              <Tooltip
-                cursor={{ fill: "var(--px)", fillOpacity: 0.08 }}
-                formatter={(value) => [formatUsd(Number(value)), "Monthly cost"]}
-                labelFormatter={(_, payload) => {
-                  const item = payload?.[0]?.payload as CostRow | undefined;
-                  return item ? `${item.modelName} @ ${item.pricingProvider}` : "";
-                }}
-                contentStyle={{
-                  backgroundColor: "var(--paper)",
-                  border: "1px solid var(--px)",
-                  borderRadius: 0,
-                  color: "var(--px)",
-                  fontFamily: "var(--font-jbmono), monospace",
-                  fontSize: 12,
-                }}
-              />
-              <Bar dataKey="monthlyCost" fill="var(--px)" radius={0}>
-                {top10.map((_, i) => (
-                  <Cell key={i} fillOpacity={Math.max(0.4, 1 - i * 0.07)} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        {/* CSS bars: top-10, collapsing to top-6 on mobile */}
+        <CostBars rows={top10} providerNames={providerNames} />
       </Card>
 
-      <Card className="row-fade">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10">#</TableHead>
-              <TableHead>Model</TableHead>
-              <TableHead className="hidden sm:table-cell">Provider</TableHead>
-              <TableHead className="text-right">Monthly cost</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {costs.map((row, i) => (
-              <TableRow key={`${row.modelSlug}-${row.pricingProvider}`}>
-                <TableCell className="font-mono text-xs text-ink2 nums">
-                  {String(i + 1).padStart(2, "0")}
-                </TableCell>
-                <TableCell className="font-semibold">{row.modelName}</TableCell>
-                <TableCell className="hidden text-ink2 sm:table-cell">{row.pricingProvider}</TableCell>
-                <TableCell className="text-right font-mono font-bold nums">{formatUsd(row.monthlyCost)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Card>
+      <DataTable
+        rows={costs}
+        columns={buildResultColumns(providerNames)}
+        rowKey={(row) => `${row.modelSlug}-${row.pricingProvider}`}
+        mobileMode="table"
+        sortable={false}
+        withExport={false}
+        sortSelectId="cost-sort"
+        cardFooter={<OffPeakFootnote rows={costs} className="border-t border-line px-3 py-2" />}
+      />
+
+      <p className="font-mono text-[11px] leading-5 text-ink2">
+        Excludes batch/volume discounts and tiered pricing (DeepSeek peak ×2, long-context tiers). Cached rate
+        applied where published.
+      </p>
     </div>
   );
 }

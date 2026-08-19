@@ -20,6 +20,11 @@ export function getModel(slug: string): Model | undefined {
   return getAllModels().find((m) => m.slug === slug);
 }
 
+/** Cheapest pricing entry of a model (lowest input $/1M). */
+export function getCheapestEntry(model: Model): Model["pricing"][number] {
+  return [...model.pricing].sort((a, b) => a.inputPer1M - b.inputPer1M)[0];
+}
+
 /** One row per model × provider pricing entry. */
 export interface PriceRow {
   modelSlug: string;
@@ -35,6 +40,8 @@ export interface PriceRow {
   openWeights: boolean;
   updatedAt: string;
   sourceUrl: string;
+  /** Pricing-entry note (e.g. off-peak caveats), if present in the data. */
+  note?: string;
 }
 
 export function getAllPriceRows(): PriceRow[] {
@@ -53,6 +60,7 @@ export function getAllPriceRows(): PriceRow[] {
       openWeights: m.openWeights,
       updatedAt: p.updatedAt,
       sourceUrl: p.sourceUrl,
+      note: p.note,
     })),
   );
 }

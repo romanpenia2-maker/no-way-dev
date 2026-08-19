@@ -15,8 +15,8 @@ const variantClasses: Record<NonNullable<ButtonProps["variant"]>, string> = {
 };
 
 const sizeClasses: Record<NonNullable<ButtonProps["size"]>, string> = {
-  default: "h-9 px-4 py-2",
-  sm: "h-8 px-3 text-xs",
+  default: "h-10 min-h-10 px-4 py-2",
+  sm: "h-10 min-h-10 px-3 text-xs",
   lg: "h-10 px-6",
   icon: "h-9 w-9",
 };

@@ -1,0 +1,25 @@
+{
+  "slug": "glm-5-3",
+  "name": "GLM-5.3",
+  "provider": "zai",
+  "releasedAt": "2026-08-14",
+  "status": "ga",
+  "context": {
+    "tokens": 1000000
+  },
+  "pricing": [
+    {
+      "provider": "zai",
+      "inputPer1M": 1.4,
+      "outputPer1M": 4.4,
+      "cachedInputPer1M": 0.26,
+      "note": "weights promised ~2 weeks after launch after safety review; GLM-5.2 is MIT",
+      "updatedAt": "2026-08-19",
+      "sourceUrl": "https://docs.z.ai/guides/overview/pricing"
+    }
+  ],
+  "capabilities": ["text", "tools", "json-mode", "reasoning"],
+  "openWeights": false,
+  "lastVerifiedAt": "2026-08-19",
+  "benchmarks": []
+}

@@ -1,0 +1,35 @@
+{
+  "slug": "grok-4-6",
+  "name": "Grok 4.6",
+  "provider": "xai",
+  "releasedAt": "2026-08-12",
+  "status": "ga",
+  "context": {
+    "tokens": 500000
+  },
+  "pricing": [
+    {
+      "provider": "xai",
+      "inputPer1M": 2,
+      "outputPer1M": 6,
+      "cachedInputPer1M": 0.5,
+      "note": "≥200K prompt: whole request billed $4/$12, cached $1",
+      "updatedAt": "2026-08-19",
+      "sourceUrl": "https://docs.x.ai/docs/models"
+    }
+  ],
+  "capabilities": ["text", "vision", "tools", "json-mode", "reasoning"],
+  "openWeights": false,
+  "lastVerifiedAt": "2026-08-19",
+  "arena": {
+    "webdev": {
+      "elo": 1631,
+      "rank": 5,
+      "ci": 17,
+      "votes": 1513,
+      "boardName": "grok-4.6-high",
+      "preliminary": true
+    }
+  },
+  "benchmarks": []
+}
