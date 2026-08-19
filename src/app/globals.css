@@ -66,6 +66,61 @@
   animation: row-fade 400ms ease both;
 }
 
+/* /benchmarks explorer: slice switch (fade + 5px rise) */
+@keyframes slice-enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.slice-enter {
+  animation: slice-enter 180ms ease-out both;
+}
+
+/* Expandable rows: grid-template-rows 0fr → 1fr trick (CSS-first, no JS height measuring) */
+.expand-grid {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 250ms ease-out;
+}
+.expand-grid[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.expand-grid > .expand-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Chevron rotation on expanded rows */
+.chevron {
+  transition: transform 250ms ease-out;
+}
+.chevron[data-open="true"] {
+  transform: rotate(180deg);
+}
+
+/* Sliding ink indicator under tabs */
+.ink-indicator {
+  transition:
+    left 200ms ease-out,
+    width 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slice-enter {
+    animation: none;
+  }
+  .expand-grid,
+  .chevron,
+  .ink-indicator {
+    transition: none;
+  }
+}
+
 /* MDX guides typography — same ink, same rules */
 @layer components {
   .mdx-content {

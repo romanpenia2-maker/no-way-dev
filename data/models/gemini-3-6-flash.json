@@ -1,0 +1,77 @@
+{
+  "slug": "gemini-3-6-flash",
+  "name": "Gemini 3.6 Flash",
+  "provider": "google",
+  "releasedAt": "2026-07-21",
+  "status": "ga",
+  "context": {
+    "tokens": 1000000
+  },
+  "pricing": [
+    {
+      "provider": "google",
+      "inputPer1M": 1.5,
+      "outputPer1M": 7.5,
+      "cachedInputPer1M": 0.15,
+      "note": "promo price $0.75/$3.75 (cached $0.075) likely until Dec 31, 2026 — attribution probable, not guaranteed",
+      "updatedAt": "2026-08-19",
+      "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing"
+    }
+  ],
+  "capabilities": ["text", "vision", "audio", "tools", "json-mode", "reasoning"],
+  "openWeights": false,
+  "lastVerifiedAt": "2026-08-19",
+  "arena": {
+    "text": {
+      "elo": 1484,
+      "rank": 16,
+      "ci": 6,
+      "votes": 13815,
+      "boardName": "gemini-3.6-flash-high"
+    },
+    "vision": {
+      "elo": 1295,
+      "rank": 7,
+      "ci": 18,
+      "votes": 1205,
+      "boardName": "gemini-3.6-flash-high"
+    },
+    "hard-prompts": {
+      "elo": 1504,
+      "rank": 18,
+      "ci": 7,
+      "votes": 9406,
+      "boardName": "gemini-3.6-flash-high"
+    },
+    "math": {
+      "elo": 1512,
+      "rank": 7,
+      "ci": 23,
+      "votes": 667,
+      "boardName": "gemini-3.6-flash-high"
+    }
+  },
+  "benchmarks": [
+    {
+      "name": "SWE-bench Pro",
+      "score": 58.7,
+      "note": "official Google model card",
+      "testedAt": "2026-07-21",
+      "sourceUrl": "https://deepmind.google/models/model-cards/gemini-3-6-flash/"
+    },
+    {
+      "name": "Terminal-Bench 2.1",
+      "score": 78,
+      "note": "official Google model card",
+      "testedAt": "2026-07-21",
+      "sourceUrl": "https://deepmind.google/models/model-cards/gemini-3-6-flash/"
+    },
+    {
+      "name": "OSWorld-Verified",
+      "score": 83,
+      "note": "official Google model card",
+      "testedAt": "2026-07-21",
+      "sourceUrl": "https://deepmind.google/models/model-cards/gemini-3-6-flash/"
+    }
+  ]
+}

@@ -9,7 +9,7 @@ export const capabilitySchema = z.enum([
   "reasoning",
 ]);
 
-export const modelStatusSchema = z.enum(["ga", "beta", "deprecated"]);
+export const modelStatusSchema = z.enum(["ga", "preview", "beta", "deprecated"]);
 
 export const pricingEntrySchema = z.object({
   provider: z
@@ -19,6 +19,7 @@ export const pricingEntrySchema = z.object({
   inputPer1M: z.number().nonnegative(),
   outputPer1M: z.number().nonnegative(),
   cachedInputPer1M: z.number().nonnegative().optional(),
+  note: z.string().min(1).optional(),
   updatedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "updatedAt must be YYYY-MM-DD"),
   sourceUrl: z.string().url(),
 });
@@ -31,12 +32,33 @@ export const benchmarkEntrySchema = z.object({
   sourceUrl: z.string().url(),
 });
 
-export const arenaSchema = z.object({
+export const arenaCategorySchema = z.enum([
+  "text",
+  "webdev",
+  "vision",
+  "coding",
+  "hard-prompts",
+  "math",
+]);
+
+export const arenaEntrySchema = z.object({
   elo: z.number().int().positive(),
   rank: z.number().int().positive(),
-  variant: z.string().min(1).optional(),
+  ci: z.number().int().positive(),
+  votes: z.number().int().positive(),
+  boardName: z.string().min(1),
+  preliminary: z.boolean().optional(),
   note: z.string().min(1).optional(),
-  snapshotAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "snapshotAt must be YYYY-MM-DD"),
+});
+
+/** Per-category arena ratings — a category is present only if the model is in that board's top-20. */
+export const arenaSchema = z.object({
+  text: arenaEntrySchema.optional(),
+  webdev: arenaEntrySchema.optional(),
+  vision: arenaEntrySchema.optional(),
+  coding: arenaEntrySchema.optional(),
+  "hard-prompts": arenaEntrySchema.optional(),
+  math: arenaEntrySchema.optional(),
 });
 
 export const modelSchema = z.object({
@@ -64,5 +86,7 @@ export type Capability = z.infer<typeof capabilitySchema>;
 export type ModelStatus = z.infer<typeof modelStatusSchema>;
 export type PricingEntry = z.infer<typeof pricingEntrySchema>;
 export type BenchmarkEntry = z.infer<typeof benchmarkEntrySchema>;
-export type ArenaEntry = z.infer<typeof arenaSchema>;
+export type ArenaCategory = z.infer<typeof arenaCategorySchema>;
+export type ArenaEntry = z.infer<typeof arenaEntrySchema>;
+export type ArenaRatings = z.infer<typeof arenaSchema>;
 export type Model = z.infer<typeof modelSchema>;

@@ -1,0 +1,83 @@
+{
+  "slug": "claude-opus-5",
+  "name": "Claude Opus 5",
+  "provider": "anthropic",
+  "releasedAt": "2026-07-24",
+  "status": "ga",
+  "context": {
+    "tokens": 1000000,
+    "maxOutput": 128000
+  },
+  "pricing": [
+    {
+      "provider": "anthropic",
+      "inputPer1M": 5,
+      "outputPer1M": 25,
+      "cachedInputPer1M": 0.5,
+      "note": "Fast mode (research preview): $10/$50; batch $2.50/$12.50",
+      "updatedAt": "2026-08-19",
+      "sourceUrl": "https://docs.anthropic.com/en/docs/about-claude/pricing"
+    }
+  ],
+  "capabilities": ["text", "vision", "tools", "json-mode", "reasoning"],
+  "openWeights": false,
+  "lastVerifiedAt": "2026-08-19",
+  "arena": {
+    "text": {
+      "elo": 1493,
+      "rank": 7,
+      "ci": 5,
+      "votes": 20030,
+      "boardName": "claude-opus-5-high",
+      "note": "max variant: 1489, rank 10"
+    },
+    "webdev": {
+      "elo": 1692,
+      "rank": 1,
+      "ci": 9,
+      "votes": 6448,
+      "boardName": "claude-opus-5-max",
+      "note": "high variant: 1663, rank 4"
+    },
+    "vision": {
+      "elo": 1297,
+      "rank": 6,
+      "ci": 11,
+      "votes": 3821,
+      "boardName": "claude-opus-5-high"
+    },
+    "coding": {
+      "elo": 1531,
+      "rank": 9,
+      "ci": 9,
+      "votes": 5433,
+      "boardName": "claude-opus-5-high",
+      "note": "max variant: 1530, rank 12"
+    },
+    "hard-prompts": {
+      "elo": 1520,
+      "rank": 5,
+      "ci": 6,
+      "votes": 13390,
+      "boardName": "claude-opus-5-high",
+      "note": "max variant: 1516, rank 9"
+    },
+    "math": {
+      "elo": 1553,
+      "rank": 1,
+      "ci": 28,
+      "votes": 437,
+      "boardName": "claude-opus-5-max",
+      "note": "high variant: 1524, rank 3; small sample"
+    }
+  },
+  "benchmarks": [
+    {
+      "name": "Terminal-Bench 2.1",
+      "score": 86.7,
+      "note": "UNVERIFIED for Anthropic — figure from Meta's vendor table",
+      "testedAt": "2026-08-05",
+      "sourceUrl": "https://codersera.com/blog/muse-spark-complete-guide-2026/"
+    }
+  ]
+}

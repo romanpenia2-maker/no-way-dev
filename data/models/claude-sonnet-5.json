@@ -1,0 +1,64 @@
+{
+  "slug": "claude-sonnet-5",
+  "name": "Claude Sonnet 5",
+  "provider": "anthropic",
+  "releasedAt": "2026-06-30",
+  "status": "ga",
+  "context": {
+    "tokens": 1000000,
+    "maxOutput": 128000
+  },
+  "pricing": [
+    {
+      "provider": "anthropic",
+      "inputPer1M": 2,
+      "outputPer1M": 10,
+      "cachedInputPer1M": 0.2,
+      "note": "intro price; may rise to $3/$15 after Aug 31, 2026 — re-check in September",
+      "updatedAt": "2026-08-19",
+      "sourceUrl": "https://docs.anthropic.com/en/docs/about-claude/pricing"
+    }
+  ],
+  "capabilities": ["text", "vision", "tools", "json-mode", "reasoning"],
+  "openWeights": false,
+  "lastVerifiedAt": "2026-08-19",
+  "arena": {
+    "webdev": {
+      "elo": 1540,
+      "rank": 17,
+      "ci": 8,
+      "votes": 6578,
+      "boardName": "claude-sonnet-5-high"
+    },
+    "coding": {
+      "elo": 1523,
+      "rank": 19,
+      "ci": 8,
+      "votes": 6509,
+      "boardName": "claude-sonnet-5-high"
+    }
+  },
+  "benchmarks": [
+    {
+      "name": "SWE-bench Verified",
+      "score": 85.2,
+      "note": "vendor-reported (Anthropic)",
+      "testedAt": "2026-06-30",
+      "sourceUrl": "https://coursiv.io/blog/claude-opus-5-vs-sonnet-5"
+    },
+    {
+      "name": "SWE-bench Pro",
+      "score": 63.2,
+      "note": "vendor-reported (Anthropic)",
+      "testedAt": "2026-06-30",
+      "sourceUrl": "https://coursiv.io/blog/claude-opus-5-vs-sonnet-5"
+    },
+    {
+      "name": "Terminal-Bench 2.1",
+      "score": 80.4,
+      "note": "Terminus-2; confirmed by Google's official Gemini 3.6 Flash model card",
+      "testedAt": "2026-07-21",
+      "sourceUrl": "https://deepmind.google/models/model-cards/gemini-3-6-flash/"
+    }
+  ]
+}

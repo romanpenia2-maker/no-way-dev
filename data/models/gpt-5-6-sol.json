@@ -1,0 +1,83 @@
+{
+  "slug": "gpt-5-6-sol",
+  "name": "GPT-5.6 Sol",
+  "provider": "openai",
+  "releasedAt": "2026-07-09",
+  "status": "ga",
+  "context": {
+    "tokens": 1050000
+  },
+  "pricing": [
+    {
+      "provider": "openai",
+      "inputPer1M": 5,
+      "outputPer1M": 30,
+      "cachedInputPer1M": 0.5,
+      "updatedAt": "2026-08-19",
+      "sourceUrl": "https://platform.openai.com/docs/pricing"
+    }
+  ],
+  "capabilities": ["text", "vision", "tools", "json-mode", "reasoning"],
+  "openWeights": false,
+  "lastVerifiedAt": "2026-08-19",
+  "arena": {
+    "text": {
+      "elo": 1481,
+      "rank": 19,
+      "ci": 6,
+      "votes": 15558,
+      "boardName": "gpt-5.6-sol-xhigh"
+    },
+    "webdev": {
+      "elo": 1622,
+      "rank": 7,
+      "ci": 8,
+      "votes": 8595,
+      "boardName": "gpt-5.6-sol-xhigh (codex-harness)"
+    },
+    "coding": {
+      "elo": 1526,
+      "rank": 15,
+      "ci": 9,
+      "votes": 4436,
+      "boardName": "gpt-5.6-sol-xhigh"
+    },
+    "hard-prompts": {
+      "elo": 1504,
+      "rank": 16,
+      "ci": 7,
+      "votes": 10306,
+      "boardName": "gpt-5.6-sol-xhigh"
+    }
+  },
+  "benchmarks": [
+    {
+      "name": "Terminal-Bench 2.1",
+      "score": 88.8,
+      "note": "base, Codex harness; Ultra config: 91.9; vendor-reported, METR flagged high reward-hacking",
+      "testedAt": "2026-07-09",
+      "sourceUrl": "https://openai.com/index/previewing-gpt-5-6-sol/"
+    },
+    {
+      "name": "GPQA Diamond",
+      "score": 94.1,
+      "note": "from Alibaba's official Qwen3.8-Max release table (cross-vendor)",
+      "testedAt": "2026-08-03",
+      "sourceUrl": "https://www.marktechpost.com/2026/08/03/alibaba-qwen-releases-qwen3-8-max/"
+    },
+    {
+      "name": "Humanity's Last Exam",
+      "score": 47.2,
+      "note": "from Alibaba's official Qwen3.8-Max release table (cross-vendor)",
+      "testedAt": "2026-08-03",
+      "sourceUrl": "https://www.marktechpost.com/2026/08/03/alibaba-qwen-releases-qwen3-8-max/"
+    },
+    {
+      "name": "SWE-bench Pro",
+      "score": 64.6,
+      "note": "OpenAI has not published SWE-bench Pro; figure from Alibaba's vendor-run table",
+      "testedAt": "2026-08-03",
+      "sourceUrl": "https://www.marktechpost.com/2026/08/03/alibaba-qwen-releases-qwen3-8-max/"
+    }
+  ]
+}

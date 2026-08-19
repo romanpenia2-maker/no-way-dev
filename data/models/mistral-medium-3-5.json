@@ -1,0 +1,39 @@
+{
+  "slug": "mistral-medium-3-5",
+  "name": "Mistral Medium 3.5",
+  "provider": "mistral",
+  "releasedAt": "2026-04-29",
+  "status": "beta",
+  "context": {
+    "tokens": 256000
+  },
+  "pricing": [
+    {
+      "provider": "mistral",
+      "inputPer1M": 1.5,
+      "outputPer1M": 7.5,
+      "updatedAt": "2026-08-19",
+      "sourceUrl": "https://mistral.ai/pricing"
+    }
+  ],
+  "capabilities": ["text", "vision", "tools", "json-mode"],
+  "openWeights": true,
+  "license": "modified MIT",
+  "lastVerifiedAt": "2026-08-19",
+  "benchmarks": [
+    {
+      "name": "SWE-bench Verified",
+      "score": 77.6,
+      "note": "vendor-reported via aggregator, unverified",
+      "testedAt": "2026-05-01",
+      "sourceUrl": "https://aitooltier.com/pricing/mistral"
+    },
+    {
+      "name": "GPQA Diamond",
+      "score": 74.8,
+      "note": "Artificial Analysis data via aggregator",
+      "testedAt": "2026-08-01",
+      "sourceUrl": "https://pricepertoken.com/compare/provider/mistral-ai-vs-openai"
+    }
+  ]
+}

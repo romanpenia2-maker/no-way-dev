@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getAllModels, getModel } from "@/lib/data/models";
+import { ARENA_CATEGORY_ORDER, getBenchmarksMeta } from "@/lib/data/benchmarks";
 import { getProvider } from "@/lib/data/providers";
 import { formatDate, formatPricePer1M, formatTokens } from "@/lib/utils";
 import { breadcrumbJsonLd, JsonLd, techArticleJsonLd } from "@/lib/seo/jsonld";
@@ -37,6 +38,11 @@ export default async function ModelPage({ params }: Props) {
   if (!model) notFound();
 
   const cheapest = [...model.pricing].sort((a, b) => a.inputPer1M - b.inputPer1M)[0];
+  const arenaMeta = getBenchmarksMeta();
+  const arenaEntries = ARENA_CATEGORY_ORDER.flatMap((cat) => {
+    const entry = model.arena?.[cat];
+    return entry ? [{ cat, entry, meta: arenaMeta.categories[cat] }] : [];
+  });
 
   return (
     <div className="w-full px-4 py-12 sm:px-6 lg:px-12">
@@ -149,7 +155,17 @@ export default async function ModelPage({ params }: Props) {
         </Table>
       </Card>
 
-      {model.arena || model.benchmarks?.length ? (
+      {model.pricing.some((p) => p.note) ? (
+        <ul className="-mt-6 mb-8 list-disc space-y-1 pl-5 text-sm leading-6 text-ink2">
+          {model.pricing
+            .filter((p) => p.note)
+            .map((p) => (
+              <li key={p.provider}>{p.note}</li>
+            ))}
+        </ul>
+      ) : null}
+
+      {arenaEntries.length > 0 || model.benchmarks?.length ? (
         <section className="mb-8">
           <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="font-display text-2xl font-bold uppercase leading-[0.94] tracking-[-0.02em]">
@@ -163,24 +179,47 @@ export default async function ModelPage({ params }: Props) {
             </Link>
           </div>
 
-          {model.arena ? (
-            <div className="mb-4 flex flex-col gap-2 border border-ink p-4 sm:flex-row sm:items-center">
-              <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
-                <span>
-                  <span className="font-mono text-2xl font-bold nums">{model.arena.elo}</span>{" "}
-                  <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">arena elo</span>
-                </span>
-                <span>
-                  <span className="font-mono text-2xl font-bold nums">#{model.arena.rank}</span>{" "}
-                  <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">arena rank</span>
-                </span>
-              </div>
-              <div className="font-mono text-[11px] text-ink2 sm:ml-auto sm:text-right">
-                {model.arena.variant ? <p>variant: {model.arena.variant}</p> : null}
-                <p className="nums">snapshot {formatDate(model.arena.snapshotAt)}</p>
-                {model.arena.note ? <p className="mt-1 max-w-md sm:ml-auto">{model.arena.note}</p> : null}
-              </div>
-            </div>
+          {arenaEntries.length > 0 ? (
+            <Card className="row-fade mb-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Board</TableHead>
+                    <TableHead className="text-right">Arena score</TableHead>
+                    <TableHead className="text-right">Rank</TableHead>
+                    <TableHead className="hidden text-right sm:table-cell">Votes</TableHead>
+                    <TableHead className="hidden sm:table-cell">Snapshot</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {arenaEntries.map(({ cat, entry, meta }) => (
+                    <TableRow key={cat}>
+                      <TableCell>
+                        <span className="font-semibold">{meta.label}</span>
+                        {entry.preliminary ? (
+                          <Badge variant="secondary" className="ml-1 align-middle" title="Preliminary — low vote count">
+                            P
+                          </Badge>
+                        ) : null}
+                        <p className="mt-0.5 font-mono text-[11px] text-ink2">{entry.boardName}</p>
+                        {entry.note ? <p className="mt-0.5 text-[13px] leading-5 text-ink2">{entry.note}</p> : null}
+                      </TableCell>
+                      <TableCell className="text-right font-mono font-bold nums">
+                        {entry.elo}
+                        <span className="ml-1 text-xs font-normal text-ink2">±{entry.ci}</span>
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-ink2 nums">#{entry.rank}</TableCell>
+                      <TableCell className="hidden text-right font-mono text-ink2 nums sm:table-cell">
+                        {entry.votes.toLocaleString("en-US")}
+                      </TableCell>
+                      <TableCell className="hidden font-mono text-xs text-ink2 nums sm:table-cell">
+                        {formatDate(meta.snapshotAt)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
           ) : null}
 
           {model.benchmarks?.length ? (

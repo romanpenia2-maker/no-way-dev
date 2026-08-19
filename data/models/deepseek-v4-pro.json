@@ -1,0 +1,58 @@
+{
+  "slug": "deepseek-v4-pro",
+  "name": "DeepSeek V4 Pro",
+  "provider": "deepseek",
+  "releasedAt": "2026-04-24",
+  "status": "ga",
+  "context": {
+    "tokens": 1000000,
+    "maxOutput": 384000
+  },
+  "pricing": [
+    {
+      "provider": "deepseek",
+      "inputPer1M": 0.66,
+      "outputPer1M": 1.98,
+      "cachedInputPer1M": 0.022,
+      "note": "OFF-PEAK rates; PEAK (01:00–04:00, 06:00–10:00 UTC) is 2x: $1.32/$3.96, cache-hit $0.044. Model version DeepSeek-V4-Pro-0813",
+      "updatedAt": "2026-08-19",
+      "sourceUrl": "https://api-docs.deepseek.com/quick_start/pricing"
+    }
+  ],
+  "capabilities": ["text", "tools", "json-mode", "reasoning"],
+  "openWeights": true,
+  "license": "MIT",
+  "lastVerifiedAt": "2026-08-19",
+  "arena": {
+    "webdev": {
+      "elo": 1584,
+      "rank": 10,
+      "ci": 14,
+      "votes": 2180,
+      "boardName": "deepseek-v4-pro-high-20260813"
+    }
+  },
+  "benchmarks": [
+    {
+      "name": "SWE-bench Verified",
+      "score": 80.6,
+      "note": "Artificial Analysis data via secondary source — official model card not directly read",
+      "testedAt": "2026-08-07",
+      "sourceUrl": "https://verboo.ai/en/blog/qwen-3-7-max-swe-bench-custo-token"
+    },
+    {
+      "name": "SWE-bench Pro",
+      "score": 59,
+      "note": "Artificial Analysis data via secondary source — official model card not directly read",
+      "testedAt": "2026-08-07",
+      "sourceUrl": "https://verboo.ai/en/blog/qwen-3-7-max-swe-bench-custo-token"
+    },
+    {
+      "name": "Terminal-Bench 2.0",
+      "score": 67.9,
+      "note": "Artificial Analysis data via secondary source — official model card not directly read",
+      "testedAt": "2026-08-07",
+      "sourceUrl": "https://verboo.ai/en/blog/qwen-3-7-max-swe-bench-custo-token"
+    }
+  ]
+}

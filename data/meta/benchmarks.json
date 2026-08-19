@@ -1,7 +1,46 @@
 {
-  "snapshotAt": "2026-08-13",
-  "votes": "7.78M",
-  "totalModels": 392,
-  "sourceUrl": "https://arena.ai/leaderboard/text",
-  "note": "LMArena Text Overall leaderboard snapshot"
+  "categories": {
+    "text": {
+      "label": "Text Overall",
+      "snapshotAt": "2026-08-13",
+      "votes": 7779985,
+      "totalModels": 392,
+      "sourceUrl": "https://arena.ai/leaderboard/text"
+    },
+    "webdev": {
+      "label": "WebDev",
+      "snapshotAt": "2026-08-15",
+      "votes": 579848,
+      "totalModels": 116,
+      "sourceUrl": "https://arena.ai/leaderboard/code/webdev"
+    },
+    "vision": {
+      "label": "Vision",
+      "snapshotAt": "2026-08-06",
+      "votes": 1188491,
+      "totalModels": 146,
+      "sourceUrl": "https://arena.ai/leaderboard/vision"
+    },
+    "coding": {
+      "label": "Coding",
+      "snapshotAt": "2026-08-13",
+      "votes": 1614827,
+      "totalModels": 386,
+      "sourceUrl": "https://arena.ai/leaderboard/text/coding"
+    },
+    "hard-prompts": {
+      "label": "Hard Prompts",
+      "snapshotAt": "2026-08-13",
+      "votes": 3507683,
+      "totalModels": 391,
+      "sourceUrl": "https://arena.ai/leaderboard/text/hard-prompts"
+    },
+    "math": {
+      "label": "Math",
+      "snapshotAt": "2026-08-13",
+      "votes": 655932,
+      "totalModels": 377,
+      "sourceUrl": "https://arena.ai/leaderboard/text/math"
+    }
+  }
 }

@@ -37,3 +37,10 @@ export function formatDate(iso: string): string {
     timeZone: "UTC",
   });
 }
+
+/** Format a big count compactly, e.g. 7779985 -> "7.78M", 8595 -> "8.6K" */
+export function formatCompact(value: number): string {
+  if (value >= 1_000_000) return `${+(value / 1_000_000).toFixed(2)}M`;
+  if (value >= 1_000) return `${+(value / 1_000).toFixed(1)}K`;
+  return String(value);
+}

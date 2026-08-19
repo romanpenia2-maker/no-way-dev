@@ -1,11 +1,23 @@
 import { z } from "zod";
 
-export const benchmarksMetaSchema = z.object({
+export const arenaCategoryMetaSchema = z.object({
+  label: z.string().min(1),
   snapshotAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "snapshotAt must be YYYY-MM-DD"),
-  votes: z.string().min(1),
+  votes: z.number().int().positive(),
   totalModels: z.number().int().positive(),
   sourceUrl: z.string().url(),
-  note: z.string().min(1),
 });
 
+export const benchmarksMetaSchema = z.object({
+  categories: z.object({
+    text: arenaCategoryMetaSchema,
+    webdev: arenaCategoryMetaSchema,
+    vision: arenaCategoryMetaSchema,
+    coding: arenaCategoryMetaSchema,
+    "hard-prompts": arenaCategoryMetaSchema,
+    math: arenaCategoryMetaSchema,
+  }),
+});
+
+export type ArenaCategoryMeta = z.infer<typeof arenaCategoryMetaSchema>;
 export type BenchmarksMeta = z.infer<typeof benchmarksMetaSchema>;

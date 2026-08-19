@@ -1,0 +1,69 @@
+{
+  "slug": "gemini-3-1-pro",
+  "name": "Gemini 3.1 Pro",
+  "provider": "google",
+  "releasedAt": "2026-02-19",
+  "status": "preview",
+  "context": {
+    "tokens": 2000000
+  },
+  "pricing": [
+    {
+      "provider": "google",
+      "inputPer1M": 2,
+      "outputPer1M": 12,
+      "note": ">200K prompts: $4/$18; cached-input price unverified",
+      "updatedAt": "2026-08-19",
+      "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing"
+    }
+  ],
+  "capabilities": ["text", "vision", "audio", "tools", "json-mode", "reasoning"],
+  "openWeights": false,
+  "lastVerifiedAt": "2026-08-19",
+  "arena": {
+    "text": {
+      "elo": 1486,
+      "rank": 14,
+      "ci": 3,
+      "votes": 95107,
+      "boardName": "gemini-3.1-pro-preview"
+    },
+    "hard-prompts": {
+      "elo": 1507,
+      "rank": 14,
+      "ci": 4,
+      "votes": 61475,
+      "boardName": "gemini-3.1-pro-preview"
+    },
+    "math": {
+      "elo": 1491,
+      "rank": 16,
+      "ci": 9,
+      "votes": 5072,
+      "boardName": "gemini-3.1-pro-preview"
+    }
+  },
+  "benchmarks": [
+    {
+      "name": "SWE-bench Pro",
+      "score": 54.2,
+      "note": "official Google model card",
+      "testedAt": "2026-07-21",
+      "sourceUrl": "https://deepmind.google/models/model-cards/gemini-3-6-flash/"
+    },
+    {
+      "name": "Terminal-Bench 2.1",
+      "score": 73.8,
+      "note": "official Google model card",
+      "testedAt": "2026-07-21",
+      "sourceUrl": "https://deepmind.google/models/model-cards/gemini-3-6-flash/"
+    },
+    {
+      "name": "SWE-bench Verified",
+      "score": 80.6,
+      "note": "secondary source, unverified; early preview eval was 72.1",
+      "testedAt": "2026-08-01",
+      "sourceUrl": "https://gitautoreview.com/blog/gemini-3-pro-code-review"
+    }
+  ]
+}

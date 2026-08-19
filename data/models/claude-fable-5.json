@@ -1,0 +1,105 @@
+{
+  "slug": "claude-fable-5",
+  "name": "Claude Fable 5",
+  "provider": "anthropic",
+  "releasedAt": "2026-06-09",
+  "status": "ga",
+  "context": {
+    "tokens": 1000000,
+    "maxOutput": 128000
+  },
+  "pricing": [
+    {
+      "provider": "anthropic",
+      "inputPer1M": 10,
+      "outputPer1M": 50,
+      "cachedInputPer1M": 1,
+      "updatedAt": "2026-08-19",
+      "sourceUrl": "https://docs.anthropic.com/en/docs/about-claude/pricing"
+    }
+  ],
+  "capabilities": ["text", "vision", "tools", "json-mode", "reasoning"],
+  "openWeights": false,
+  "lastVerifiedAt": "2026-08-19",
+  "arena": {
+    "text": {
+      "elo": 1506,
+      "rank": 1,
+      "ci": 5,
+      "votes": 21533,
+      "boardName": "claude-fable-5"
+    },
+    "webdev": {
+      "elo": 1627,
+      "rank": 6,
+      "ci": 8,
+      "votes": 7867,
+      "boardName": "claude-fable-5"
+    },
+    "vision": {
+      "elo": 1315,
+      "rank": 1,
+      "ci": 9,
+      "votes": 8333,
+      "boardName": "claude-fable-5"
+    },
+    "coding": {
+      "elo": 1554,
+      "rank": 1,
+      "ci": 9,
+      "votes": 5817,
+      "boardName": "claude-fable-5"
+    },
+    "hard-prompts": {
+      "elo": 1532,
+      "rank": 2,
+      "ci": 6,
+      "votes": 14125,
+      "boardName": "claude-fable-5"
+    },
+    "math": {
+      "elo": 1527,
+      "rank": 2,
+      "ci": 18,
+      "votes": 1055,
+      "boardName": "claude-fable-5"
+    }
+  },
+  "benchmarks": [
+    {
+      "name": "SWE-bench Pro",
+      "score": 80,
+      "note": "vendor-reported",
+      "testedAt": "2026-06-09",
+      "sourceUrl": "https://www.anthropic.com/news/claude-fable-5-mythos-5"
+    },
+    {
+      "name": "Terminal-Bench 2.1",
+      "score": 84.6,
+      "note": "Terminus-2 harness",
+      "testedAt": "2026-06-09",
+      "sourceUrl": "https://artificialanalysis.ai/evaluations/terminalbench-v2-1"
+    },
+    {
+      "name": "Humanity's Last Exam",
+      "score": 53.3,
+      "note": "best among flagships in Alibaba's Aug 2026 table",
+      "testedAt": "2026-08-03",
+      "sourceUrl": "https://www.marktechpost.com/2026/08/03/alibaba-qwen-releases-qwen3-8-max/"
+    },
+    {
+      "name": "GPQA Diamond",
+      "score": 92.6,
+      "note": "vendor-run",
+      "testedAt": "2026-08-03",
+      "sourceUrl": "https://apidog.com/blog/qwen-3-8-benchmarks/"
+    },
+    {
+      "name": "FrontierSWE",
+      "score": 86.6,
+      "note": "frontierswe.com",
+      "testedAt": "2026-07-16",
+      "sourceUrl": "https://www.kimi.com/blog/kimi-k3"
+    }
+  ]
+}

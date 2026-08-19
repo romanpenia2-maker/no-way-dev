@@ -1,8 +1,24 @@
 import fs from "node:fs";
 import path from "node:path";
 import { benchmarksMetaSchema, type BenchmarksMeta } from "@data/schemas/benchmarks-meta.schema";
-import type { BenchmarkEntry, Model } from "@data/schemas/model.schema";
+import type { ArenaCategory, BenchmarkEntry, Model } from "@data/schemas/model.schema";
 import { getAllModels } from "@/lib/data/models";
+import { getProviderName } from "@/lib/data/providers";
+import {
+  ARENA_CATEGORY_ORDER,
+  type BenchmarkValue,
+  type CategorySlice,
+  type LeaderboardRow,
+} from "@/lib/arena";
+
+export {
+  ARENA_CATEGORY_ORDER,
+  DEFAULT_ARENA_CATEGORY,
+  isArenaCategory,
+  type BenchmarkValue,
+  type CategorySlice,
+  type LeaderboardRow,
+} from "@/lib/arena";
 
 const metaFile = path.join(process.cwd(), "data", "meta", "benchmarks.json");
 
@@ -14,59 +30,47 @@ export function getBenchmarksMeta(): BenchmarksMeta {
   return metaCache;
 }
 
-export interface BenchmarkValue {
-  score: number;
-  note?: string;
-}
-
-/** One row per model on the /benchmarks leaderboard. */
-export interface LeaderboardRow {
-  modelSlug: string;
-  modelName: string;
-  modelProvider: string;
-  openWeights: boolean;
-  elo: number;
-  rank: number;
-  arenaVariant?: string;
-  arenaNote?: string;
-  sweBench?: BenchmarkValue;
-  gpqa?: BenchmarkValue;
-  aime?: BenchmarkValue;
-  liveCodeBench?: BenchmarkValue;
-  mmmu?: BenchmarkValue;
-  hle?: BenchmarkValue;
-}
-
 function findBenchmark(benchmarks: BenchmarkEntry[] | undefined, prefix: string): BenchmarkValue | undefined {
   const hit = benchmarks?.find((b) => b.name.startsWith(prefix));
   return hit ? { score: hit.score, note: hit.note } : undefined;
 }
 
-function toRow(m: Model): LeaderboardRow | null {
-  if (!m.arena) return null;
+function toRow(m: Model, category: ArenaCategory): LeaderboardRow | null {
+  const arena = m.arena?.[category];
+  if (!arena) return null;
+  const price = m.pricing[0];
   return {
     modelSlug: m.slug,
     modelName: m.name,
-    modelProvider: m.provider,
+    modelProvider: getProviderName(m.provider),
     openWeights: m.openWeights,
-    elo: m.arena.elo,
-    rank: m.arena.rank,
-    arenaVariant: m.arena.variant,
-    arenaNote: m.arena.note,
-    sweBench: findBenchmark(m.benchmarks, "SWE-bench"),
+    contextTokens: m.context.tokens,
+    priceIn: price.inputPer1M,
+    priceOut: price.outputPer1M,
+    arena,
+    arenaAll: m.arena ?? {},
+    benchmarks: m.benchmarks ?? [],
+    sweBenchPro: findBenchmark(m.benchmarks, "SWE-bench Pro"),
+    terminalBench: findBenchmark(m.benchmarks, "Terminal-Bench"),
     gpqa: findBenchmark(m.benchmarks, "GPQA"),
-    aime: findBenchmark(m.benchmarks, "AIME"),
-    liveCodeBench: findBenchmark(m.benchmarks, "LiveCodeBench"),
-    mmmu: findBenchmark(m.benchmarks, "MMMU"),
     hle: findBenchmark(m.benchmarks, "Humanity's Last Exam"),
   };
 }
 
-export function getLeaderboardRows(): LeaderboardRow[] {
+/** Rows for one arena slice — only models present in that board's top-20, sorted by Elo desc. */
+export function getCategoryRows(category: ArenaCategory): LeaderboardRow[] {
   return getAllModels()
-    .map(toRow)
+    .map((m) => toRow(m, category))
     .filter((r): r is LeaderboardRow => r !== null)
-    .sort((a, b) => b.elo - a.elo);
+    .sort((a, b) => b.arena.elo - a.arena.elo);
+}
+
+/** All slices keyed by category — serializable payload for the client explorer. */
+export function getAllCategorySlices(): Record<ArenaCategory, CategorySlice> {
+  const meta = getBenchmarksMeta();
+  return Object.fromEntries(
+    ARENA_CATEGORY_ORDER.map((cat) => [cat, { meta: meta.categories[cat], rows: getCategoryRows(cat) }]),
+  ) as Record<ArenaCategory, CategorySlice>;
 }
 
 /** Count of unique benchmark names tracked across all models. */

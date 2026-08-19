@@ -1,48 +1,43 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import type { Metadata } from "next";
-import { BenchmarksTable } from "@/components/benchmarks-table";
-import { getBenchmarksMeta, getLeaderboardRows, getUniqueBenchmarkCount } from "@/lib/data/benchmarks";
+import { BenchmarksExplorer } from "@/components/benchmarks-table";
+import {
+  ARENA_CATEGORY_ORDER,
+  getAllCategorySlices,
+  getBenchmarksMeta,
+  getCategoryRows,
+} from "@/lib/data/benchmarks";
 import { getAllModels } from "@/lib/data/models";
-import { formatDate } from "@/lib/utils";
+import { formatCompact, formatDate } from "@/lib/utils";
 import { breadcrumbJsonLd, JsonLd } from "@/lib/seo/jsonld";
 import { site } from "@/lib/site";
 
-const rows = getLeaderboardRows();
 const meta = getBenchmarksMeta();
-const top = rows[0];
-const benchmarkCount = getUniqueBenchmarkCount();
+const slices = getAllCategorySlices();
+const textRows = getCategoryRows("text");
+const webdevRows = getCategoryRows("webdev");
+const textTop = textRows[0];
+const webdevTop = webdevRows[0];
 
 export const metadata: Metadata = {
-  title: `LLM Benchmarks & Arena Ratings: ${top.modelName} leads at ${top.elo} Elo — no-way.dev`,
-  description: `LMArena-style leaderboard for ${rows.length} frontier models: Arena Elo, SWE-bench Verified, GPQA Diamond, AIME 2025, LiveCodeBench, MMMU and HLE — every score sourced. Snapshot ${formatDate(meta.snapshotAt)}, ${meta.votes} votes.`,
+  title: `LLM Benchmarks & Arena Ratings: ${textTop.modelName} tops Text Arena at ${textTop.arena.elo}, ${webdevTop.modelName} leads WebDev at ${webdevTop.arena.elo} — no-way.dev`,
+  description: `Six LMArena leaderboards — Overall, WebDev, Coding, Hard Prompts, Math, Vision — next to SWE-bench Pro, Terminal-Bench, GPQA and HLE for ${getAllModels().length} frontier models. Snapshots Aug 6–15, 2026; every score sourced, vendor-run figures flagged.`,
   alternates: { canonical: "/benchmarks" },
 };
 
 const caveats = [
-  "Qwen3 Max: all benchmark scores are vendor self-reported (Qwen), collected via the llm-stats aggregator — not independent measurements.",
-  "Grok 4 SWE-bench Verified: third-party aggregators only, medium reliability — xAI did not publish an official SWE-bench score.",
-  "GPT-5 mini LiveCodeBench v6 and MMLU-Pro: third-party measurement by LG AI (reasoning: high), not official OpenAI numbers.",
+  "Qwen3.8-Max: every benchmark score is vendor-run (Alibaba official release table) — no independent measurements yet. WebDev arena rating is preliminary.",
+  "DeepSeek V4 Pro: benchmarks are Artificial Analysis data via a secondary source — the official model card was not directly read. Listed prices are off-peak; peak windows bill 2×.",
+  "Muse Spark 1.2: Terminal-Bench 2.1 and DeepSWE are Meta-reported; an independent Vals AI run scored 14/50 on a common scaffold — large discrepancy, treat vendor numbers with care.",
+  "Mistral Medium 3.5: both benchmark scores come from aggregators, unverified against an official model card.",
+  "GPT-5.6 Sol: GPQA, HLE and SWE-bench Pro figures come from Alibaba's vendor-run Qwen3.8-Max release table (cross-vendor); METR flagged high reward-hacking on the Terminal-Bench run.",
+  "Claude Opus 5 Terminal-Bench 2.1: figure from Meta's vendor table — unverified for Anthropic.",
 ];
-
-const variantNotes = rows
-  .filter((r) => r.arenaVariant || r.arenaNote)
-  .map((r) => ({
-    name: r.modelName,
-    variant: r.arenaVariant,
-    note: r.arenaNote,
-  }));
-
-const llamaNote = rows.find((r) => r.modelSlug === "llama-4-maverick")?.arenaNote;
 
 export default function BenchmarksPage() {
   const models = getAllModels();
-
-  const stats = [
-    { label: "Models rated", value: String(rows.length).padStart(2, "0"), trend: "▲ ranked by arena elo" },
-    { label: "Top arena elo", value: String(top.elo), trend: `▲ ${top.modelName}` },
-    { label: "Benchmarks tracked", value: String(benchmarkCount), trend: "▲ every score sourced" },
-    { label: "Snapshot", value: formatDate(meta.snapshotAt), trend: `▲ ${meta.votes} votes` },
-  ];
+  const offBoards = models.filter((m) => !m.arena || Object.keys(m.arena).length === 0);
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-12">
@@ -54,8 +49,8 @@ export default function BenchmarksPage() {
             name: "LLM Benchmarks & Arena Ratings",
             description: metadata.description ?? undefined,
             url: `${site.url}/benchmarks`,
-            numberOfItems: rows.length,
-            itemListElement: rows.map((r, i) => ({
+            numberOfItems: textRows.length,
+            itemListElement: textRows.map((r, i) => ({
               "@type": "ListItem",
               position: i + 1,
               name: r.modelName,
@@ -78,51 +73,31 @@ export default function BenchmarksPage() {
           <span className="text-outline">smarter.</span>
         </h1>
         <p className="mt-5 font-mono text-[11px] uppercase tracking-[0.08em] text-ink2">
-          Arena snapshot {meta.snapshotAt} · {meta.votes} votes · {meta.totalModels} models
+          Arena snapshots Aug 6–15, 2026 · 6 leaderboards
         </p>
         <p className="mt-6 max-w-xl text-[15px] leading-7 text-ink2">
-          Arena Elo from {meta.votes} blind human votes, side by side with the benchmarks vendors love to quote —
-          SWE-bench, GPQA, AIME, LiveCodeBench, MMMU, HLE. Every number links to its source; self-reported scores
-          are flagged.
+          Blind human preference votes across six arena boards — Overall, WebDev, Coding, Hard Prompts, Math and
+          Vision — side by side with the benchmarks vendors love to quote: SWE-bench Pro, Terminal-Bench, GPQA, HLE.
+          Every number links to its source; vendor-run scores are flagged.
         </p>
       </section>
 
-      {/* Stats strip */}
-      <section className="grid grid-cols-2 border-b border-line sm:grid-cols-4">
-        {stats.map((s, i) => (
-          <div
-            key={s.label}
-            className={
-              "space-y-2 py-6 pr-4 " +
-              (i > 0 ? "border-l border-line pl-4 " : "") +
-              (i === 2 ? "max-sm:border-l-0 max-sm:pl-0" : "")
-            }
-          >
-            <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">{s.label}</p>
-            <p className="font-mono text-3xl font-bold leading-none nums sm:text-4xl">{s.value}</p>
-            <p className="font-mono text-[11px] text-ink2">{s.trend}</p>
-          </div>
-        ))}
-      </section>
-
-      {/* Leaderboard */}
+      {/* Explorer: tabs + stats + leaderboard */}
       <section className="border-b border-line py-12">
-        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+        <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="font-display text-2xl font-bold uppercase leading-[0.94] tracking-[-0.02em]">
             The leaderboard
           </h2>
           <span className="font-mono text-[11px] text-ink2">
-            sorted by arena elo · click a column to re-sort
+            pick a slice · click a column to re-sort · click a row to expand
           </span>
         </div>
-        <BenchmarksTable rows={rows} />
-        <p className="mt-3 font-mono text-[11px] text-ink2">
-          — not measured / not published · <sup className="font-bold">†</sup> score has a caveat — hover the cell
-          for details, see footnotes below.
-        </p>
+        <Suspense fallback={null}>
+          <BenchmarksExplorer slices={slices} />
+        </Suspense>
 
         {/* Footnotes */}
-        <div className="mt-8 space-y-6">
+        <div className="mt-10 space-y-6">
           <div className="space-y-2 border-t border-ink pt-3">
             <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink2">
               Caveats <sup className="font-bold">†</sup>
@@ -136,32 +111,50 @@ export default function BenchmarksPage() {
 
           <div className="space-y-2 border-t border-ink pt-3">
             <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink2">
-              Arena variants
+              Off the boards
             </h3>
             <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-ink2">
-              {variantNotes.map((v) => (
-                <li key={v.name}>
-                  <span className="font-semibold text-ink">{v.name}</span>
-                  {v.variant ? (
-                    <>
-                      {" "}
-                      rated as <span className="font-mono text-[13px]">{v.variant}</span>
-                    </>
-                  ) : null}
-                  {v.note ? `. ${v.note}.` : "."}
+              {offBoards.map((m) => (
+                <li key={m.slug}>
+                  <Link href={`/models/${m.slug}`} className="font-semibold text-ink underline-offset-4 hover:underline">
+                    {m.name}
+                  </Link>{" "}
+                  —{" "}
+                  {m.slug === "glm-5-3"
+                    ? "released Aug 14, 2026 — too fresh for any arena board; open weights promised ~2 weeks post-launch after a safety review. No verified benchmarks published yet — GLM-5.2 anchors (vendor claims): SWE-bench Verified 84.2, SWE-bench Pro 62.1, GPQA 91.2, Terminal-Bench 2.1 81.0–82.7 (harness-dependent)."
+                    : "not in the top-20 of any tracked arena slice."}
                 </li>
               ))}
+              <li>
+                <Link href="/models/kimi-k3" className="font-semibold text-ink underline-offset-4 hover:underline">
+                  Kimi K3
+                </Link>{" "}
+                has no Vision board entry;{" "}
+                <Link href="/models/gpt-5-6-sol" className="font-semibold text-ink underline-offset-4 hover:underline">
+                  GPT-5.6 Sol
+                </Link>{" "}
+                is absent from Vision and Math;{" "}
+                <Link href="/models/grok-4-6" className="font-semibold text-ink underline-offset-4 hover:underline">
+                  Grok 4.6
+                </Link>{" "}
+                appears only on WebDev (preliminary);{" "}
+                <Link
+                  href="/models/gemini-3-1-pro"
+                  className="font-semibold text-ink underline-offset-4 hover:underline"
+                >
+                  Gemini 3.1 Pro
+                </Link>{" "}
+                and{" "}
+                <Link
+                  href="/models/gemini-3-6-flash"
+                  className="font-semibold text-ink underline-offset-4 hover:underline"
+                >
+                  Gemini 3.6 Flash
+                </Link>{" "}
+                skip WebDev and Coding.
+              </li>
             </ul>
           </div>
-
-          {llamaNote ? (
-            <div className="border border-ink p-4 sm:p-6">
-              <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.08em]">
-                The Llama 4 «Leaderboard Illusion»
-              </h3>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-ink2">{llamaNote}</p>
-            </div>
-          ) : null}
         </div>
       </section>
 
@@ -175,17 +168,26 @@ export default function BenchmarksPage() {
             <span className="font-mono text-xs font-bold text-ink2 nums">01</span>
             <h3 className="font-semibold">Arena ratings</h3>
             <p className="text-sm leading-6 text-ink2">
-              {meta.note}: {meta.votes} blind pairwise votes across {meta.totalModels} models, snapshot{" "}
-              {formatDate(meta.snapshotAt)}. Arena Elo measures human preference in chat, not benchmark accuracy —
-              a model can top one board and lag on the other.{" "}
-              <a
-                href={meta.sourceUrl}
-                rel="noopener nofollow"
-                className="font-mono text-xs underline underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline"
-              >
-                arena leaderboard ↗
-              </a>
+              Six LMArena leaderboards, snapshots taken Aug 6–15, 2026. Arena Elo measures human preference, not
+              benchmark accuracy — a model can top one board and lag on another. Boards:
             </p>
+            <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-ink2">
+              {ARENA_CATEGORY_ORDER.map((cat) => {
+                const c = meta.categories[cat];
+                return (
+                  <li key={cat}>
+                    <a
+                      href={c.sourceUrl}
+                      rel="noopener nofollow"
+                      className="font-mono text-xs underline underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline"
+                    >
+                      {c.label} ↗
+                    </a>{" "}
+                    — {formatCompact(c.votes)} votes, {c.totalModels} models, snapshot {formatDate(c.snapshotAt)}
+                  </li>
+                );
+              })}
+            </ul>
           </div>
           <div className="space-y-2 border-t border-ink pt-3">
             <span className="font-mono text-xs font-bold text-ink2 nums">02</span>
@@ -195,14 +197,17 @@ export default function BenchmarksPage() {
               Per-model source links:
             </p>
             <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-ink2">
-              {models.map((m) =>
-                m.benchmarks?.length ? (
+              {models.map((m) => {
+                const urls = m.benchmarks?.length
+                  ? [...new Set(m.benchmarks.map((b) => b.sourceUrl))]
+                  : [m.pricing[0].sourceUrl];
+                return (
                   <li key={m.slug}>
                     <Link href={`/models/${m.slug}`} className="font-semibold text-ink underline-offset-4 hover:underline">
                       {m.name}
                     </Link>
                     :{" "}
-                    {[...new Set(m.benchmarks.map((b) => b.sourceUrl))].map((url, i, arr) => (
+                    {urls.map((url, i) => (
                       <span key={url}>
                         <a
                           href={url}
@@ -211,12 +216,12 @@ export default function BenchmarksPage() {
                         >
                           {new URL(url).hostname.replace(/^www\./, "")} ↗
                         </a>
-                        {i < arr.length - 1 ? ", " : ""}
+                        {i < urls.length - 1 ? ", " : ""}
                       </span>
                     ))}
                   </li>
-                ) : null,
-              )}
+                );
+              })}
             </ul>
           </div>
         </div>
