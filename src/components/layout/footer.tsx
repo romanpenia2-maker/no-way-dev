@@ -30,11 +30,11 @@ export function Footer() {
           aria-label="Footer"
         >
           {links.map((l) => (
-            <Link key={l.href} href={l.href} className="text-ink2 underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline">
+            <Link key={l.href} href={l.href} className="py-1.5 text-ink2 underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline">
               {l.label}
             </Link>
           ))}
-          <a href={site.github} rel="noopener" className="text-ink2 underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline">
+          <a href={site.github} rel="noopener" className="py-1.5 text-ink2 underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline">
             GitHub
           </a>
         </nav>

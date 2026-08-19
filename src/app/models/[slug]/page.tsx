@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getAllModels, getModel } from "@/lib/data/models";
-import { ARENA_CATEGORY_ORDER, getBenchmarksMeta } from "@/lib/data/benchmarks";
+import { ARENA_CATEGORY_ORDER, getBenchmarksMeta, getEmptyBenchmarkNotes } from "@/lib/data/benchmarks";
 import { getProvider } from "@/lib/data/providers";
 import { formatDate, formatPricePer1M, formatTokens } from "@/lib/utils";
 import { breadcrumbJsonLd, JsonLd, techArticleJsonLd } from "@/lib/seo/jsonld";
@@ -39,6 +39,7 @@ export default async function ModelPage({ params }: Props) {
 
   const cheapest = [...model.pricing].sort((a, b) => a.inputPer1M - b.inputPer1M)[0];
   const arenaMeta = getBenchmarksMeta();
+  const emptyBenchmarkNote = getEmptyBenchmarkNotes()[model.slug];
   const arenaEntries = ARENA_CATEGORY_ORDER.flatMap((cat) => {
     const entry = model.arena?.[cat];
     return entry ? [{ cat, entry, meta: arenaMeta.categories[cat] }] : [];
@@ -223,8 +224,7 @@ export default async function ModelPage({ params }: Props) {
           ) : null}
 
           {model.benchmarks?.length ? (
-            <Card className="row-fade">
-              <Table>
+            <Card className="row-fade">              <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Benchmark</TableHead>
@@ -259,7 +259,14 @@ export default async function ModelPage({ params }: Props) {
                 </TableBody>
               </Table>
             </Card>
-          ) : null}
+          ) : (
+            <div className="space-y-2 border border-line p-4">
+              <p className="text-sm font-semibold">No verified benchmarks published yet</p>
+              {emptyBenchmarkNote ? (
+                <p className="text-[13px] leading-5 text-ink2">{emptyBenchmarkNote}</p>
+              ) : null}
+            </div>
+          )}
         </section>
       ) : null}
 

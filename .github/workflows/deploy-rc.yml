@@ -35,6 +35,18 @@ jobs:
       - name: Alias to rc.no-way.dev
         run: vercel alias set "${{ steps.deploy.outputs.url }}" rc.no-way.dev --token=${{ secrets.VERCEL_TOKEN }}
 
+      - name: Verify noindex header on rc.no-way.dev
+        run: |
+          for i in 1 2 3; do
+            if curl -sI https://rc.no-way.dev/ | grep -i "x-robots-tag"; then
+              exit 0
+            fi
+            echo "attempt $i: X-Robots-Tag header missing, retrying in 15s..."
+            sleep 15
+          done
+          echo "::error::X-Robots-Tag header missing on https://rc.no-way.dev/ after 3 attempts"
+          exit 1
+
       - name: Notify Telegram
         if: always()
         env:

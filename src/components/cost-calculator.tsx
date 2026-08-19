@@ -17,21 +17,36 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { PriceRow } from "@/lib/data/models";
-import { formatUsd } from "@/lib/utils";
+import { formatUsd, isOffPeakNote } from "@/lib/utils";
 
 interface CostRow extends PriceRow {
   monthlyCost: number;
 }
 
+/** Cap URL-provided volumes so crafted links can't produce absurd/overflowing numbers. */
+const MAX_PARAM = 1e9;
+
 function parseNumberParam(searchParams: URLSearchParams | null, key: string, fallback: number) {
   const raw = searchParams?.get(key);
   const parsed = raw === null || raw === undefined ? NaN : Number(raw);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return Math.min(parsed, MAX_PARAM);
+}
+
+/** Never render "$∞" — fall back to an em dash for non-finite amounts. */
+function safeFormatUsd(value: number): string {
+  return Number.isFinite(value) ? formatUsd(value) : "—";
 }
 
 const tickStyle = { fontSize: 10, fill: "var(--px2)", fontFamily: "var(--font-jbmono), monospace" };
 
-export function CostCalculator({ rows }: { rows: PriceRow[] }) {
+export function CostCalculator({
+  rows,
+  providerNames,
+}: {
+  rows: PriceRow[];
+  providerNames: Record<string, string>;
+}) {
   const searchParams = useSearchParams();
   const [requestsPerDay, setRequestsPerDay] = useState(() => parseNumberParam(searchParams, "rpd", 10000));
   const [inputTokens, setInputTokens] = useState(() => parseNumberParam(searchParams, "in", 1000));
@@ -51,6 +66,8 @@ export function CostCalculator({ rows }: { rows: PriceRow[] }) {
   }, [rows, requestsPerDay, inputTokens, outputTokens]);
 
   const top10 = costs.slice(0, 10);
+  const top6 = costs.slice(0, 6);
+  const hasOffPeak = costs.some((row) => isOffPeakNote(row.note));
 
   // Keep the URL in sync so the state is shareable/bookmarkable.
   useEffect(() => {
@@ -108,7 +125,23 @@ export function CostCalculator({ rows }: { rows: PriceRow[] }) {
           </h2>
           <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">usd / month</span>
         </div>
-        <div className="h-80 w-full">
+        {/* Mobile: compact top-6 list instead of the chart */}
+        <ul className="divide-y divide-line sm:hidden">
+          {top6.map((row, i) => (
+            <li
+              key={`${row.modelSlug}-${row.pricingProvider}`}
+              className="flex items-baseline justify-between gap-3 py-2 font-mono text-[13px] nums"
+            >
+              <span className="min-w-0 truncate">
+                <span className="mr-2 text-ink2">{String(i + 1).padStart(2, "0")}</span>
+                {row.modelName}
+                <span className="ml-1 text-[11px] text-ink2">@ {providerNames[row.pricingProvider] ?? row.pricingProvider}</span>
+              </span>
+              <span className="shrink-0 font-bold">{safeFormatUsd(row.monthlyCost)}/mo</span>
+            </li>
+          ))}
+        </ul>
+        <div className="hidden h-80 w-full sm:block">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={top10} margin={{ top: 4, right: 8, bottom: 60, left: 8 }}>
               <CartesianGrid strokeDasharray="2 4" stroke="var(--line)" vertical={false} />
@@ -129,10 +162,12 @@ export function CostCalculator({ rows }: { rows: PriceRow[] }) {
               />
               <Tooltip
                 cursor={{ fill: "var(--px)", fillOpacity: 0.08 }}
-                formatter={(value) => [formatUsd(Number(value)), "Monthly cost"]}
+                formatter={(value) => [safeFormatUsd(Number(value)), "Monthly cost"]}
                 labelFormatter={(_, payload) => {
                   const item = payload?.[0]?.payload as CostRow | undefined;
-                  return item ? `${item.modelName} @ ${item.pricingProvider}` : "";
+                  return item
+                    ? `${item.modelName} @ ${providerNames[item.pricingProvider] ?? item.pricingProvider}`
+                    : "";
                 }}
                 contentStyle={{
                   backgroundColor: "var(--paper)",
@@ -169,13 +204,27 @@ export function CostCalculator({ rows }: { rows: PriceRow[] }) {
                 <TableCell className="font-mono text-xs text-ink2 nums">
                   {String(i + 1).padStart(2, "0")}
                 </TableCell>
-                <TableCell className="font-semibold">{row.modelName}</TableCell>
-                <TableCell className="hidden text-ink2 sm:table-cell">{row.pricingProvider}</TableCell>
-                <TableCell className="text-right font-mono font-bold nums">{formatUsd(row.monthlyCost)}</TableCell>
+                <TableCell className="font-semibold">
+                  {row.modelName}
+                  {isOffPeakNote(row.note) ? (
+                    <sup className="ml-0.5 font-bold" title="Off-peak rate; peak windows bill 2×">
+                      †
+                    </sup>
+                  ) : null}
+                </TableCell>
+                <TableCell className="hidden text-ink2 sm:table-cell">
+                  {providerNames[row.pricingProvider] ?? row.pricingProvider}
+                </TableCell>
+                <TableCell className="text-right font-mono font-bold nums">{safeFormatUsd(row.monthlyCost)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
+        {hasOffPeak ? (
+          <p className="border-t border-line px-3 py-2 font-mono text-[11px] text-ink2">
+            <sup className="font-bold">†</sup> off-peak rate; peak windows bill 2×
+          </p>
+        ) : null}
       </Card>
     </div>
   );

@@ -42,5 +42,9 @@
       "totalModels": 377,
       "sourceUrl": "https://arena.ai/leaderboard/text/math"
     }
+  },
+  "emptyBenchmarkNotes": {
+    "glm-5-3": "GLM-5.2 anchors (vendor claims): SWE-bench Verified 84.2, SWE-bench Pro 62.1, GPQA 91.2, Terminal-Bench 2.1 81.0–82.7 (harness-dependent)",
+    "grok-4-6": "AA Intelligence Index 61 (Aug 2026), xAI claims gains across 10 launch benchmarks vs Grok 4.5"
   }
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PricingTable } from "@/components/pricing-table";
 import { getAllPriceRows } from "@/lib/data/models";
+import { getProviderNameMap } from "@/lib/data/providers";
 
 export const metadata: Metadata = {
   title: "LLM API Pricing — all models, all providers",
@@ -21,10 +22,10 @@ export default function PricingPage() {
         </h1>
         <p className="text-[15px] leading-7 text-ink2">
           {rows.length} pricing entries across {new Set(rows.map((r) => r.modelSlug)).size} models. Prices in USD
-          per 1M tokens. Click a column to sort; every row links back to the official source.
+          per 1M tokens. Sort by any column; every row links back to the official source.
         </p>
       </div>
-      <PricingTable rows={rows} />
+      <PricingTable rows={rows} providerNames={getProviderNameMap()} />
     </div>
   );
 }

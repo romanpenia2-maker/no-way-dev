@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { EmailCapture } from "@/components/email-capture";
 import { getAllModels, getAllPriceRows, getCheapestPriceRows } from "@/lib/data/models";
 import { getProviderName } from "@/lib/data/providers";
-import { formatDate, formatPricePer1M, formatTokens } from "@/lib/utils";
+import { formatDate, formatPricePer1M, formatTokens, isOffPeakNote } from "@/lib/utils";
 import { JsonLd, websiteJsonLd } from "@/lib/seo/jsonld";
 
 export const metadata: Metadata = {
@@ -74,6 +74,7 @@ export default function HomePage() {
     { label: "Max context", value: formatTokens(maxContext), trend: "▲ tokens in one window" },
     { label: "Providers", value: String(providerCount).padStart(2, "0"), trend: "▲ official sources only" },
   ];
+  const hasOffPeak = cheapest.some((row) => isOffPeakNote(row.note));
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-12">
@@ -81,7 +82,7 @@ export default function HomePage() {
 
       {/* Hero */}
       <section className="border-b border-line py-14 sm:py-20">
-        <h1 className="font-display text-[clamp(40px,9vw,96px)] font-extrabold uppercase leading-[0.94] tracking-[-0.03em]">
+        <h1 className="font-display text-[clamp(32px,10vw,96px)] font-extrabold uppercase leading-[0.94] tracking-[-0.03em]">
           Read the market
           <br />
           <span className="text-outline">like paper.</span>
@@ -115,9 +116,10 @@ export default function HomePage() {
           <div
             key={s.label}
             className={
-              "space-y-2 py-6 pr-4 " +
+              "min-w-0 space-y-2 py-6 pr-4 " +
               (i > 0 ? "border-l border-line pl-4 " : "") +
-              (i === 2 ? "max-sm:border-l-0 max-sm:pl-0" : "")
+              (i === 2 ? "max-sm:border-l-0 max-sm:pl-0 " : "") +
+              (i >= 2 ? "max-sm:border-t max-sm:border-line" : "")
             }
           >
             <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">{s.label}</p>
@@ -171,6 +173,11 @@ export default function HomePage() {
                   </TableCell>
                   <TableCell className="text-right font-mono font-bold nums">
                     {formatPricePer1M(row.inputPer1M)}
+                    {isOffPeakNote(row.note) ? (
+                      <sup className="ml-0.5 font-bold" title="Off-peak rate; peak windows bill 2×">
+                        †
+                      </sup>
+                    ) : null}
                   </TableCell>
                   <TableCell className="text-right font-mono font-bold nums">
                     {formatPricePer1M(row.outputPer1M)}
@@ -183,10 +190,17 @@ export default function HomePage() {
             </TableBody>
           </Table>
         </Card>
-        <div className="mt-3 text-right">
+        <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2">
+          {hasOffPeak ? (
+            <p className="font-mono text-[11px] text-ink2">
+              <sup className="font-bold">†</sup> off-peak rate; peak windows bill 2×
+            </p>
+          ) : (
+            <span />
+          )}
           <Link
             href="/pricing"
-            className="font-mono text-xs uppercase tracking-[0.08em] hover:underline hover:underline-offset-4"
+            className="ml-auto font-mono text-xs uppercase tracking-[0.08em] hover:underline hover:underline-offset-4"
           >
             Full table →
           </Link>
@@ -244,6 +258,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-    </div>
+       </div>
   );
 }

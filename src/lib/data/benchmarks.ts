@@ -77,3 +77,24 @@ export function getAllCategorySlices(): Record<ArenaCategory, CategorySlice> {
 export function getUniqueBenchmarkCount(): number {
   return new Set(getAllModels().flatMap((m) => (m.benchmarks ?? []).map((b) => b.name))).size;
 }
+
+/** Per-slug fallback notes for models with no verified benchmarks (single source: data/meta/benchmarks.json). */
+export function getEmptyBenchmarkNotes(): Record<string, string> {
+  return getBenchmarksMeta().emptyBenchmarkNotes ?? {};
+}
+
+/**
+ * Human label for the snapshot window across all arena boards,
+ * e.g. "Aug 6–15, 2026" (same month) or "Jul 30 – Aug 15, 2026".
+ */
+export function getSnapshotRangeLabel(): string {
+  const meta = getBenchmarksMeta();
+  const dates = ARENA_CATEGORY_ORDER.map((cat) => new Date(`${meta.categories[cat].snapshotAt}T00:00:00Z`));
+  const min = new Date(Math.min(...dates.map((d) => d.getTime())));
+  const max = new Date(Math.max(...dates.map((d) => d.getTime())));
+  const month = (d: Date) => d.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+  if (min.getUTCFullYear() === max.getUTCFullYear() && min.getUTCMonth() === max.getUTCMonth()) {
+    return `${month(min)} ${min.getUTCDate()}–${max.getUTCDate()}, ${max.getUTCFullYear()}`;
+  }
+  return `${month(min)} ${min.getUTCDate()} – ${month(max)} ${max.getUTCDate()}, ${max.getUTCFullYear()}`;
+}

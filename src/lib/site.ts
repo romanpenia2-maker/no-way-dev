@@ -5,5 +5,5 @@ export const site = {
   description:
     "Up-to-date LLM API pricing across providers, cost calculators and practical guides. Every number has a source.",
   email: "hello@no-way.dev",
-  github: "https://github.com/no-way-dev/no-way-dev",
+  github: "https://github.com/romanpenia2-maker/no-way-dev",
 } as const;

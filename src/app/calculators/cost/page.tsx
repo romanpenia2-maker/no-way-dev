@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { CostCalculator } from "@/components/cost-calculator";
 import { getAllPriceRows } from "@/lib/data/models";
+import { getProviderNameMap } from "@/lib/data/providers";
 
 export const metadata: Metadata = {
   title: "LLM API Cost Calculator — estimate your monthly bill",
@@ -26,7 +27,7 @@ export default function CostCalculatorPage() {
         </p>
       </div>
       <Suspense fallback={null}>
-        <CostCalculator rows={rows} />
+        <CostCalculator rows={rows} providerNames={getProviderNameMap()} />
       </Suspense>
     </div>
   );

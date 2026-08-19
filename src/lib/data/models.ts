@@ -35,6 +35,8 @@ export interface PriceRow {
   openWeights: boolean;
   updatedAt: string;
   sourceUrl: string;
+  /** Pricing-entry note (e.g. off-peak caveats), if present in the data. */
+  note?: string;
 }
 
 export function getAllPriceRows(): PriceRow[] {
@@ -53,6 +55,7 @@ export function getAllPriceRows(): PriceRow[] {
       openWeights: m.openWeights,
       updatedAt: p.updatedAt,
       sourceUrl: p.sourceUrl,
+      note: p.note,
     })),
   );
 }

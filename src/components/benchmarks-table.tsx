@@ -1,15 +1,15 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   ARENA_CATEGORY_ORDER,
   DEFAULT_ARENA_CATEGORY,
-  isArenaCategory,
   type BenchmarkValue,
   type CategorySlice,
   type LeaderboardRow,
@@ -29,14 +29,6 @@ const columns: { key: SortKey; label: string; numeric?: boolean; hideBelowLg?: b
   { key: "gpqa", label: "GPQA", numeric: true, hideBelowLg: true },
   { key: "hle", label: "HLE", numeric: true, hideBelowLg: true },
 ];
-
-/** Models with no verified benchmark entries — what to show instead of an empty list. */
-const EMPTY_BENCHMARK_NOTES: Record<string, string> = {
-  "glm-5-3":
-    "GLM-5.2 anchors (vendor claims): SWE-bench Verified 84.2, SWE-bench Pro 62.1, GPQA 91.2, Terminal-Bench 2.1 81.0–82.7 (harness-dependent)",
-  "grok-4-6":
-    "AA Intelligence Index 61 (Aug 2026), xAI claims gains across 10 launch benchmarks vs Grok 4.5",
-};
 
 function tabLabel(cat: ArenaCategory, slices: Record<ArenaCategory, CategorySlice>): string {
   return cat === "text" ? "Overall" : slices[cat].meta.label;
@@ -63,14 +55,28 @@ function valueOf(row: LeaderboardRow, key: SortKey): number | undefined {
   }
 }
 
+/** Focusable caveat marker with a CSS-only tooltip (hover on fine pointers, focus/tap elsewhere). */
+function Caveat({ note }: { note: string }) {
+  return (
+    <span tabIndex={0} role="note" aria-label={`Caveat: ${note}`} className="caveat relative ml-0.5 inline-block">
+      <sup className="font-bold" aria-hidden>
+        †
+      </sup>
+      <span className="caveat-tip" aria-hidden>
+        {note}
+      </span>
+    </span>
+  );
+}
+
 function ScoreCell({ value }: { value?: BenchmarkValue }) {
   if (!value) {
     return <TableCell className="hidden text-right font-mono text-ink2 nums lg:table-cell">—</TableCell>;
   }
   return (
-    <TableCell className="hidden text-right font-mono nums lg:table-cell" title={value.note}>
+    <TableCell className="hidden text-right font-mono nums lg:table-cell">
       {value.score.toFixed(1)}
-      {value.note ? <sup className="ml-0.5 font-bold">†</sup> : null}
+      {value.note ? <Caveat note={value.note} /> : null}
     </TableCell>
   );
 }
@@ -87,13 +93,15 @@ function ExpandedPanel({
   row,
   active,
   slices,
+  emptyNotes,
 }: {
   row: LeaderboardRow;
   active: ArenaCategory;
   slices: Record<ArenaCategory, CategorySlice>;
+  emptyNotes: Record<string, string>;
 }) {
   const activeMeta = slices[active].meta;
-  const emptyNote = EMPTY_BENCHMARK_NOTES[row.modelSlug];
+  const emptyNote = emptyNotes[row.modelSlug];
   return (
     <div className="grid gap-8 border-t border-line p-4 sm:p-6 md:grid-cols-2">
       {/* Arena slices */}
@@ -194,13 +202,24 @@ function ExpandedPanel({
   );
 }
 
-export function BenchmarksExplorer({ slices }: { slices: Record<ArenaCategory, CategorySlice> }) {
-  const searchParams = useSearchParams();
+export function BenchmarksExplorer({
+  slices,
+  initialCat,
+  invalidCat,
+  trackedModels,
+  emptyNotes,
+}: {
+  slices: Record<ArenaCategory, CategorySlice>;
+  initialCat: ArenaCategory;
+  /** True when the URL carried an unknown ?cat= value — the client cleans it up. */
+  invalidCat?: boolean;
+  trackedModels: number;
+  emptyNotes: Record<string, string>;
+}) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const param = searchParams.get("cat");
-  const cat: ArenaCategory = param && isArenaCategory(param) ? param : DEFAULT_ARENA_CATEGORY;
+  const cat = initialCat;
   const slice = slices[cat];
 
   const [sortKey, setSortKey] = useState<SortKey>("score");
@@ -212,6 +231,11 @@ export function BenchmarksExplorer({ slices }: { slices: Record<ArenaCategory, C
     setExpanded(null);
   }, [cat]);
 
+  // Unknown ?cat= value — strip it from the URL.
+  useEffect(() => {
+    if (invalidCat) router.replace(pathname, { scroll: false });
+  }, [invalidCat, router, pathname]);
+
   const selectTab = useCallback(
     (next: ArenaCategory) => {
       const qs = next === DEFAULT_ARENA_CATEGORY ? "" : `?cat=${next}`;
@@ -220,25 +244,28 @@ export function BenchmarksExplorer({ slices }: { slices: Record<ArenaCategory, C
     [router, pathname],
   );
 
-  /* Sliding ink indicator under the active tab */
-  const tablistRef = useRef<HTMLDivElement>(null);
+  /* Scroll-strip tabs: the active tab carries its own ink underline and is scrolled into view. */
   const tabRefs = useRef<Partial<Record<ArenaCategory, HTMLButtonElement | null>>>({});
-  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
 
-  const measure = useCallback(() => {
-    const el = tabRefs.current[cat];
-    const box = tablistRef.current;
-    if (!el || !box) return;
-    const boxRect = box.getBoundingClientRect();
-    const rect = el.getBoundingClientRect();
-    setIndicator({ left: rect.left - boxRect.left, width: rect.width });
+  useEffect(() => {
+    tabRefs.current[cat]?.scrollIntoView({ behavior: "smooth", inline: "nearest", block: "nearest" });
   }, [cat]);
 
-  useLayoutEffect(() => {
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [measure]);
+  // APG-lite: ArrowLeft/ArrowRight move between tabs (selection follows focus).
+  const onTablistKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      const idx = ARENA_CATEGORY_ORDER.indexOf(cat);
+      const next =
+        ARENA_CATEGORY_ORDER[
+          (idx + (e.key === "ArrowRight" ? 1 : -1) + ARENA_CATEGORY_ORDER.length) % ARENA_CATEGORY_ORDER.length
+        ];
+      selectTab(next);
+      tabRefs.current[next]?.focus();
+    },
+    [cat, selectTab],
+  );
 
   const sorted = useMemo(() => {
     const dir = sortAsc ? 1 : -1;
@@ -258,28 +285,33 @@ export function BenchmarksExplorer({ slices }: { slices: Record<ArenaCategory, C
       setSortAsc(!sortAsc);
     } else {
       setSortKey(key);
-      // rank is a place (1 = best); everything else sorts high → low
-      setSortAsc(key === "model" || key === "rank");
+      // model/rank are places or names (a→z, 1 = best); CI is an uncertainty margin (small = best);
+      // everything else sorts high → low
+      setSortAsc(key === "model" || key === "rank" || key === "ci");
     }
   }
 
   const top = slice.rows[0];
-  const stats = [
-    { label: "Models ranked", value: String(slice.rows.length).padStart(2, "0"), trend: "▲ of 13 tracked, top-20 cut" },
+  const stats: { label: string; value: string; trend: string; small?: boolean }[] = [
+    {
+      label: "Models ranked",
+      value: String(slice.rows.length).padStart(2, "0"),
+      trend: `▲ of ${trackedModels} tracked, top-20 cut`,
+    },
     { label: "Top score", value: top ? String(top.arena.elo) : "—", trend: top ? `▲ ${top.modelName}` : "" },
     {
       label: "Votes",
       value: formatCompact(slice.meta.votes),
       trend: `▲ ${slice.meta.totalModels} models on full board`,
     },
-    { label: "Snapshot", value: formatDate(slice.meta.snapshotAt), trend: "▲ arena.ai leaderboard" },
+    { label: "Snapshot", value: formatDate(slice.meta.snapshotAt), trend: "▲ arena.ai leaderboard", small: true },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Tabs */}
-      <div ref={tablistRef} className="relative border-b border-ink" role="tablist" aria-label="Arena category">
-        <div className="flex flex-wrap">
+      {/* Tabs: nowrap scroll-strip, active tab underlined in ink */}
+      <div className="border-b border-ink" role="tablist" aria-label="Arena category" onKeyDown={onTablistKeyDown}>
+        <div className="no-scrollbar -mb-px flex flex-nowrap overflow-x-auto snap-x snap-mandatory">
           {ARENA_CATEGORY_ORDER.map((c) => (
             <button
               key={c}
@@ -290,19 +322,14 @@ export function BenchmarksExplorer({ slices }: { slices: Record<ArenaCategory, C
               aria-selected={c === cat}
               onClick={() => selectTab(c)}
               className={cn(
-                "px-3 py-2.5 font-mono text-[11px] font-bold uppercase tracking-[0.08em] transition-colors sm:px-4",
-                c === cat ? "text-ink" : "text-ink2 hover:text-ink",
+                "shrink-0 snap-start border-b-2 px-3 py-3.5 font-mono text-[11px] font-bold uppercase tracking-[0.08em] transition-colors sm:px-4 sm:py-2.5",
+                c === cat ? "-mb-px border-ink text-ink" : "border-transparent text-ink2 hover:text-ink",
               )}
             >
               {tabLabel(c, slices)}
             </button>
           ))}
         </div>
-        <span
-          className="ink-indicator absolute bottom-[-1px] h-[2px] bg-ink"
-          style={{ left: indicator.left, width: indicator.width }}
-          aria-hidden
-        />
       </div>
 
       {/* Stats strip + table re-render per slice with a snappy fade/rise */}
@@ -312,16 +339,54 @@ export function BenchmarksExplorer({ slices }: { slices: Record<ArenaCategory, C
             <div
               key={s.label}
               className={cn(
-                "space-y-2 px-4 py-5",
+                "min-w-0 space-y-2 px-4 py-5",
                 i > 0 && "border-l border-line",
                 i === 2 && "max-sm:border-l-0",
+                i >= 2 && "max-sm:border-t max-sm:border-line",
               )}
             >
               <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">{s.label}</p>
-              <p className="font-mono text-2xl font-bold leading-none nums sm:text-3xl">{s.value}</p>
+              <p
+                className={cn(
+                  "font-mono font-bold leading-none nums",
+                  s.small ? "text-lg sm:text-3xl" : "text-2xl sm:text-3xl",
+                )}
+              >
+                {s.value}
+              </p>
               <p className="font-mono text-[11px] text-ink2">{s.trend}</p>
             </div>
           ))}
+        </div>
+
+        {/* Mobile sort control (columns are not tappable on small screens) */}
+        <div className="flex items-center gap-2 md:hidden">
+          <label
+            htmlFor="benchmarks-sort"
+            className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2"
+          >
+            Sort by
+          </label>
+          <Select
+            id="benchmarks-sort"
+            value={sortKey}
+            onChange={(e) => toggleSort(e.target.value as SortKey)}
+            className="w-40"
+          >
+            {columns.map((col) => (
+              <option key={col.key} value={col.key}>
+                {col.label}
+              </option>
+            ))}
+          </Select>
+          <button
+            type="button"
+            onClick={() => setSortAsc(!sortAsc)}
+            aria-label={sortAsc ? "Sort descending" : "Sort ascending"}
+            className="flex h-9 w-9 items-center justify-center border border-ink font-mono text-sm hover:bg-ink hover:text-paper"
+          >
+            {sortAsc ? "↑" : "↓"}
+          </button>
         </div>
 
         {/* Desktop table */}
@@ -394,7 +459,7 @@ export function BenchmarksExplorer({ slices }: { slices: Record<ArenaCategory, C
                             e.stopPropagation();
                             setExpanded(open ? null : row.modelSlug);
                           }}
-                          className="px-1"
+                          className="p-2 -m-1"
                         >
                           <Chevron open={open} />
                         </button>
@@ -404,7 +469,7 @@ export function BenchmarksExplorer({ slices }: { slices: Record<ArenaCategory, C
                       <td colSpan={columns.length + 2} className="p-0">
                         <div className="expand-grid" data-open={open} id={`panel-${row.modelSlug}`}>
                           <div className="expand-inner">
-                            <ExpandedPanel row={row} active={cat} slices={slices} />
+                            <ExpandedPanel row={row} active={cat} slices={slices} emptyNotes={emptyNotes} />
                           </div>
                         </div>
                       </td>
@@ -456,7 +521,7 @@ export function BenchmarksExplorer({ slices }: { slices: Record<ArenaCategory, C
                 <div className="expand-grid" data-open={open} id={`m-panel-${row.modelSlug}`}>
                   <div className="expand-inner">
                     <div className="pt-3">
-                      <ExpandedPanel row={row} active={cat} slices={slices} />
+                      <ExpandedPanel row={row} active={cat} slices={slices} emptyNotes={emptyNotes} />
                     </div>
                     <div className="mt-3 pb-1">
                       <Link
@@ -474,9 +539,9 @@ export function BenchmarksExplorer({ slices }: { slices: Record<ArenaCategory, C
         </div>
 
         <p className="font-mono text-[11px] leading-5 text-ink2">
-          — not measured / not published · <sup className="font-bold">†</sup> score has a caveat — hover the cell for
-          details, see footnotes below · <span className="font-bold">P</span> preliminary rating (low vote count) ·
-          click a row to expand full arena &amp; benchmark data.
+          — not measured / not published · <sup className="font-bold">†</sup> score has a caveat — focus or tap the
+          marker for details, see footnotes below · <span className="font-bold">P</span> preliminary rating (low vote
+          count) · sort by any column · open a row for full arena &amp; benchmark data.
         </p>
       </div>
     </div>

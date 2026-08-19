@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { PriceRow } from "@/lib/data/models";
-import { formatDate, formatPricePer1M, formatTokens, cn } from "@/lib/utils";
+import { formatDate, formatPricePer1M, formatTokens, cn, isOffPeakNote } from "@/lib/utils";
 
 type SortKey = "model" | "provider" | "input" | "output" | "context" | "updated";
 
@@ -20,11 +20,19 @@ const columns: { key: SortKey; label: string; numeric?: boolean; hideMobile?: bo
   { key: "updated", label: "Updated" },
 ];
 
-export function PricingTable({ rows }: { rows: PriceRow[] }) {
+export function PricingTable({
+  rows,
+  providerNames,
+}: {
+  rows: PriceRow[];
+  providerNames: Record<string, string>;
+}) {
   const [sortKey, setSortKey] = useState<SortKey>("input");
   const [sortAsc, setSortAsc] = useState(true);
   const [provider, setProvider] = useState("all");
   const [capability, setCapability] = useState("all");
+
+  const providerName = (slug: string) => providerNames[slug] ?? slug;
 
   const providers = useMemo(
     () => [...new Set(rows.map((r) => r.pricingProvider))].sort(),
@@ -45,7 +53,11 @@ export function PricingTable({ rows }: { rows: PriceRow[] }) {
         case "model":
           return a.modelName.localeCompare(b.modelName) * dir;
         case "provider":
-          return a.pricingProvider.localeCompare(b.pricingProvider) * dir;
+          return (
+            (providerNames[a.pricingProvider] ?? a.pricingProvider).localeCompare(
+              providerNames[b.pricingProvider] ?? b.pricingProvider,
+            ) * dir
+          );
         case "input":
           return (a.inputPer1M - b.inputPer1M) * dir;
         case "output":
@@ -56,7 +68,7 @@ export function PricingTable({ rows }: { rows: PriceRow[] }) {
           return a.updatedAt.localeCompare(b.updatedAt) * dir;
       }
     });
-  }, [rows, provider, capability, sortKey, sortAsc]);
+  }, [rows, provider, capability, sortKey, sortAsc, providerNames]);
 
   function toggleSort(key: SortKey) {
     if (key === sortKey) {
@@ -67,6 +79,8 @@ export function PricingTable({ rows }: { rows: PriceRow[] }) {
     }
   }
 
+  const hasOffPeak = filtered.some((row) => isOffPeakNote(row.note));
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 border border-line p-3 sm:flex-row sm:items-center">
@@ -76,7 +90,7 @@ export function PricingTable({ rows }: { rows: PriceRow[] }) {
             <option value="all">All providers</option>
             {providers.map((p) => (
               <option key={p} value={p}>
-                {p}
+                {providerName(p)}
               </option>
             ))}
           </Select>
@@ -91,6 +105,24 @@ export function PricingTable({ rows }: { rows: PriceRow[] }) {
               </option>
             ))}
           </Select>
+        </label>
+        <label className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.08em] text-ink2 md:hidden">
+          Sort by
+          <Select value={sortKey} onChange={(e) => toggleSort(e.target.value as SortKey)} className="w-36">
+            {columns.map((col) => (
+              <option key={col.key} value={col.key}>
+                {col.label}
+              </option>
+            ))}
+          </Select>
+          <button
+            type="button"
+            onClick={() => setSortAsc(!sortAsc)}
+            aria-label={sortAsc ? "Sort descending" : "Sort ascending"}
+            className="flex h-9 w-9 shrink-0 items-center justify-center border border-ink font-mono text-sm hover:bg-ink hover:text-paper"
+          >
+            {sortAsc ? "↑" : "↓"}
+          </button>
         </label>
         <span className="font-mono text-[11px] text-ink2 nums sm:ml-auto">
           {String(filtered.length).padStart(2, "0")}/{String(rows.length).padStart(2, "0")} rows
@@ -132,9 +164,14 @@ export function PricingTable({ rows }: { rows: PriceRow[] }) {
                     {row.openWeights ? "Open" : "Closed"}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-ink2">{row.pricingProvider}</TableCell>
+                <TableCell className="text-ink2">{providerName(row.pricingProvider)}</TableCell>
                 <TableCell className="text-right font-mono font-bold nums">
                   {formatPricePer1M(row.inputPer1M)}
+                  {isOffPeakNote(row.note) ? (
+                    <sup className="ml-0.5 font-bold" title="Off-peak rate; peak windows bill 2×">
+                      †
+                    </sup>
+                  ) : null}
                 </TableCell>
                 <TableCell className="text-right font-mono font-bold nums">
                   {formatPricePer1M(row.outputPer1M)}
@@ -157,14 +194,21 @@ export function PricingTable({ rows }: { rows: PriceRow[] }) {
               <Link href={`/models/${row.modelSlug}`} className="font-semibold underline-offset-4 hover:underline">
                 {row.modelName}
               </Link>
-              <span className="font-mono text-xl font-bold nums">{formatPricePer1M(row.inputPer1M)}</span>
+              <span className="font-mono text-xl font-bold nums">
+                {formatPricePer1M(row.inputPer1M)}
+                {isOffPeakNote(row.note) ? (
+                  <sup className="ml-0.5 font-bold" title="Off-peak rate; peak windows bill 2×">
+                    †
+                  </sup>
+                ) : null}
+              </span>
             </div>
             <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-ink2 nums">
               <span>{String(i + 1).padStart(2, "0")}</span>
               <Badge variant={row.openWeights ? "outline" : "solid"}>
                 {row.openWeights ? "Open" : "Closed"}
               </Badge>
-              <span>{row.pricingProvider}</span>
+              <span>{providerName(row.pricingProvider)}</span>
               <span>out {formatPricePer1M(row.outputPer1M)}</span>
               <span>ctx {formatTokens(row.contextTokens)}</span>
               <span>upd {formatDate(row.updatedAt)}</span>
@@ -172,6 +216,12 @@ export function PricingTable({ rows }: { rows: PriceRow[] }) {
           </div>
         ))}
       </div>
+
+      {hasOffPeak ? (
+        <p className="font-mono text-[11px] text-ink2">
+          <sup className="font-bold">†</sup> off-peak rate; peak windows bill 2×
+        </p>
+      ) : null}
     </div>
   );
 }

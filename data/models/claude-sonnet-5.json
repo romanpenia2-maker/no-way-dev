@@ -16,7 +16,7 @@
       "cachedInputPer1M": 0.2,
       "note": "intro price; may rise to $3/$15 after Aug 31, 2026 — re-check in September",
       "updatedAt": "2026-08-19",
-      "sourceUrl": "https://docs.anthropic.com/en/docs/about-claude/pricing"
+      "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing"
     }
   ],
   "capabilities": ["text", "vision", "tools", "json-mode", "reasoning"],

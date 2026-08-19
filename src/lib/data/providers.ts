@@ -23,3 +23,8 @@ export function getProvider(slug: string): Provider | undefined {
 export function getProviderName(slug: string): string {
   return getProvider(slug)?.name ?? slug;
 }
+
+/** slug → display name map, for passing into client components. */
+export function getProviderNameMap(): Record<string, string> {
+  return Object.fromEntries(getAllProviders().map((p) => [p.slug, p.name]));
+}

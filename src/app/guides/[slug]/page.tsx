@@ -54,6 +54,14 @@ export default async function GuidePage({ params }: Props) {
         <MDXRemote
           source={guide.content}
           options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
+          components={{
+            // Wide GFM tables scroll horizontally instead of breaking the layout.
+            table: (props: React.ComponentProps<"table">) => (
+              <div className="overflow-x-auto">
+                <table {...props} />
+              </div>
+            ),
+          }}
         />
       </article>
     </div>

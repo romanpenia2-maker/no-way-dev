@@ -16,7 +16,7 @@
       "cachedInputPer1M": 0.5,
       "note": "Fast mode (research preview): $10/$50; batch $2.50/$12.50",
       "updatedAt": "2026-08-19",
-      "sourceUrl": "https://docs.anthropic.com/en/docs/about-claude/pricing"
+      "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing"
     }
   ],
   "capabilities": ["text", "vision", "tools", "json-mode", "reasoning"],

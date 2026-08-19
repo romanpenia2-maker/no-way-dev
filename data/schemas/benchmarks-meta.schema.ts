@@ -17,6 +17,8 @@ export const benchmarksMetaSchema = z.object({
     "hard-prompts": arenaCategoryMetaSchema,
     math: arenaCategoryMetaSchema,
   }),
+  /** What to show instead of an empty benchmark list, keyed by model slug. */
+  emptyBenchmarkNotes: z.record(z.string().min(1)).optional(),
 });
 
 export type ArenaCategoryMeta = z.infer<typeof arenaCategoryMetaSchema>;

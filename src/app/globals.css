@@ -10,7 +10,7 @@
   --paper: #e7e8e2;      /* основной «лист» */
   --backdrop: #b5b6ac;   /* фон под листом */
   --px: #1b1b16;         /* основной текст, почти чёрный тёплый */
-  --px2: #63635a;        /* вторичный текст */
+  --px2: #55554c;        /* вторичный текст */
   --line: #c9cac0;       /* разделители */
   --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
 }
@@ -95,6 +95,34 @@
   min-height: 0;
 }
 
+/* CSS-only tooltip for caveat markers — shows on hover (fine pointers) and focus/tap */
+.caveat-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 13rem;
+  padding: 0.5rem 0.625rem;
+  background: var(--px);
+  color: var(--paper);
+  font-family: var(--font-jbmono), monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  z-index: 60;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.caveat:hover .caveat-tip,
+.caveat:focus-visible .caveat-tip,
+.caveat:focus-within .caveat-tip {
+  opacity: 1;
+  visibility: visible;
+}
+
 /* Chevron rotation on expanded rows */
 .chevron {
   transition: transform 250ms ease-out;
@@ -103,20 +131,22 @@
   transform: rotate(180deg);
 }
 
-/* Sliding ink indicator under tabs */
-.ink-indicator {
-  transition:
-    left 200ms ease-out,
-    width 200ms ease-out;
+/* Horizontal scroll strips: hide the scrollbar, keep the scroll */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .row-fade,
   .slice-enter {
     animation: none;
   }
   .expand-grid,
-  .chevron,
-  .ink-indicator {
+  .chevron {
     transition: none;
   }
 }

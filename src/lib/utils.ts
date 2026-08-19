@@ -5,6 +5,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/** True when a pricing note marks the listed rates as off-peak (e.g. DeepSeek). */
+export function isOffPeakNote(note: string | undefined): boolean {
+  return note !== undefined && /off-?peak/i.test(note);
+}
+
 /** Format a USD price per 1M tokens, e.g. 1.25 -> "$1.25", 0.075 -> "$0.075" */
 export function formatPricePer1M(value: number): string {
   if (value >= 1) return `$${value.toFixed(2)}`;

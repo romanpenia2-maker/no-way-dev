@@ -1,17 +1,21 @@
 import Link from "next/link";
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import { BenchmarksExplorer } from "@/components/benchmarks-table";
 import {
   ARENA_CATEGORY_ORDER,
+  DEFAULT_ARENA_CATEGORY,
   getAllCategorySlices,
   getBenchmarksMeta,
   getCategoryRows,
+  getEmptyBenchmarkNotes,
+  getSnapshotRangeLabel,
+  isArenaCategory,
 } from "@/lib/data/benchmarks";
 import { getAllModels } from "@/lib/data/models";
 import { formatCompact, formatDate } from "@/lib/utils";
 import { breadcrumbJsonLd, JsonLd } from "@/lib/seo/jsonld";
 import { site } from "@/lib/site";
+import type { ArenaCategory } from "@data/schemas/model.schema";
 
 const meta = getBenchmarksMeta();
 const slices = getAllCategorySlices();
@@ -19,10 +23,12 @@ const textRows = getCategoryRows("text");
 const webdevRows = getCategoryRows("webdev");
 const textTop = textRows[0];
 const webdevTop = webdevRows[0];
+const snapshotRange = getSnapshotRangeLabel();
+const emptyNotes = getEmptyBenchmarkNotes();
 
 export const metadata: Metadata = {
-  title: `LLM Benchmarks & Arena Ratings: ${textTop.modelName} tops Text Arena at ${textTop.arena.elo}, ${webdevTop.modelName} leads WebDev at ${webdevTop.arena.elo} — no-way.dev`,
-  description: `Six LMArena leaderboards — Overall, WebDev, Coding, Hard Prompts, Math, Vision — next to SWE-bench Pro, Terminal-Bench, GPQA and HLE for ${getAllModels().length} frontier models. Snapshots Aug 6–15, 2026; every score sourced, vendor-run figures flagged.`,
+  title: `LLM Benchmarks & Arena Ratings: ${textTop.modelName} tops Text Arena at ${textTop.arena.elo}, ${webdevTop.modelName} leads WebDev at ${webdevTop.arena.elo}`,
+  description: `Six LMArena leaderboards — Overall, WebDev, Coding, Hard Prompts, Math, Vision — next to SWE-bench Pro, Terminal-Bench, GPQA and HLE for ${getAllModels().length} frontier models. Snapshots ${snapshotRange}; every score sourced, vendor-run figures flagged.`,
   alternates: { canonical: "/benchmarks" },
 };
 
@@ -35,9 +41,20 @@ const caveats = [
   "Claude Opus 5 Terminal-Bench 2.1: figure from Meta's vendor table — unverified for Anthropic.",
 ];
 
-export default function BenchmarksPage() {
+interface Props {
+  searchParams: Promise<{ cat?: string }>;
+}
+
+export default async function BenchmarksPage({ searchParams }: Props) {
   const models = getAllModels();
   const offBoards = models.filter((m) => !m.arena || Object.keys(m.arena).length === 0);
+
+  // Server-render the leaderboard slice matching ?cat= so the HTML always
+  // contains the active table (no client-side bailout on useSearchParams).
+  const { cat: rawCat } = await searchParams;
+  const validCat = rawCat !== undefined && isArenaCategory(rawCat);
+  const initialCat = validCat ? (rawCat as ArenaCategory) : DEFAULT_ARENA_CATEGORY;
+  const invalidCat = rawCat !== undefined && !validCat;
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-12">
@@ -67,13 +84,13 @@ export default function BenchmarksPage() {
       {/* Hero */}
       <section className="border-b border-line py-14 sm:py-20">
         <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">Reference / 02</p>
-        <h1 className="font-display text-[clamp(40px,9vw,96px)] font-extrabold uppercase leading-[0.94] tracking-[-0.03em]">
+        <h1 className="font-display text-[clamp(32px,10vw,96px)] font-extrabold uppercase leading-[0.94] tracking-[-0.03em]">
           Who&apos;s actually
           <br />
           <span className="text-outline">smarter.</span>
         </h1>
         <p className="mt-5 font-mono text-[11px] uppercase tracking-[0.08em] text-ink2">
-          Arena snapshots Aug 6–15, 2026 · 6 leaderboards
+          Arena snapshots {snapshotRange} · {ARENA_CATEGORY_ORDER.length} leaderboards
         </p>
         <p className="mt-6 max-w-xl text-[15px] leading-7 text-ink2">
           Blind human preference votes across six arena boards — Overall, WebDev, Coding, Hard Prompts, Math and
@@ -89,12 +106,16 @@ export default function BenchmarksPage() {
             The leaderboard
           </h2>
           <span className="font-mono text-[11px] text-ink2">
-            pick a slice · click a column to re-sort · click a row to expand
+            pick a slice · sort by any column · open a row for details
           </span>
         </div>
-        <Suspense fallback={null}>
-          <BenchmarksExplorer slices={slices} />
-        </Suspense>
+        <BenchmarksExplorer
+          slices={slices}
+          initialCat={initialCat}
+          invalidCat={invalidCat}
+          trackedModels={models.length}
+          emptyNotes={emptyNotes}
+        />
 
         {/* Footnotes */}
         <div className="mt-10 space-y-6">
@@ -121,8 +142,10 @@ export default function BenchmarksPage() {
                   </Link>{" "}
                   —{" "}
                   {m.slug === "glm-5-3"
-                    ? "released Aug 14, 2026 — too fresh for any arena board; open weights promised ~2 weeks post-launch after a safety review. No verified benchmarks published yet — GLM-5.2 anchors (vendor claims): SWE-bench Verified 84.2, SWE-bench Pro 62.1, GPQA 91.2, Terminal-Bench 2.1 81.0–82.7 (harness-dependent)."
-                    : "not in the top-20 of any tracked arena slice."}
+                    ? `released Aug 14, 2026 — too fresh for any arena board; open weights promised ~2 weeks post-launch after a safety review. No verified benchmarks published yet — ${emptyNotes[m.slug] ?? ""}`
+                    : emptyNotes[m.slug]
+                      ? `No verified benchmarks published yet — ${emptyNotes[m.slug]}`
+                      : "not in the top-20 of any tracked arena slice."}
                 </li>
               ))}
               <li>
@@ -168,7 +191,7 @@ export default function BenchmarksPage() {
             <span className="font-mono text-xs font-bold text-ink2 nums">01</span>
             <h3 className="font-semibold">Arena ratings</h3>
             <p className="text-sm leading-6 text-ink2">
-              Six LMArena leaderboards, snapshots taken Aug 6–15, 2026. Arena Elo measures human preference, not
+              Six LMArena leaderboards, snapshots taken {snapshotRange}. Arena Elo measures human preference, not
               benchmark accuracy — a model can top one board and lag on another. Boards:
             </p>
             <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-ink2">

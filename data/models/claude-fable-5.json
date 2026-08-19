@@ -15,7 +15,7 @@
       "outputPer1M": 50,
       "cachedInputPer1M": 1,
       "updatedAt": "2026-08-19",
-      "sourceUrl": "https://docs.anthropic.com/en/docs/about-claude/pricing"
+      "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing"
     }
   ],
   "capabilities": ["text", "vision", "tools", "json-mode", "reasoning"],
