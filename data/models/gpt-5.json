@@ -12,7 +12,7 @@
     {
       "provider": "openai",
       "inputPer1M": 1.25,
-      "outputPer1M": 10.0,
+      "outputPer1M": 10,
       "updatedAt": "2025-11-01",
       "sourceUrl": "https://openai.com/api/pricing/",
       "cachedInputPer1M": 0.125
@@ -26,5 +26,46 @@
     "reasoning"
   ],
   "openWeights": false,
-  "lastVerifiedAt": "2025-11-01"
+  "lastVerifiedAt": "2025-11-01",
+  "arena": {
+    "elo": 1434,
+    "rank": 87,
+    "variant": "gpt-5-high (reasoning)",
+    "note": "gpt-5-chat variant: 1427 Elo, rank 98",
+    "snapshotAt": "2026-08-13"
+  },
+  "benchmarks": [
+    {
+      "name": "SWE-bench Verified",
+      "score": 74.9,
+      "testedAt": "2025-08-07",
+      "sourceUrl": "https://openai.com/index/introducing-gpt-5/"
+    },
+    {
+      "name": "AIME 2025",
+      "score": 94.6,
+      "note": "no tools",
+      "testedAt": "2025-08-07",
+      "sourceUrl": "https://openai.com/index/introducing-gpt-5/"
+    },
+    {
+      "name": "GPQA Diamond",
+      "score": 88.4,
+      "note": "GPT-5 pro with extended reasoning, no tools",
+      "testedAt": "2025-08-07",
+      "sourceUrl": "https://openai.com/index/introducing-gpt-5/"
+    },
+    {
+      "name": "MMMU",
+      "score": 84.2,
+      "testedAt": "2025-08-07",
+      "sourceUrl": "https://openai.com/index/introducing-gpt-5/"
+    },
+    {
+      "name": "Aider Polyglot",
+      "score": 88,
+      "testedAt": "2025-08-07",
+      "sourceUrl": "https://openai.com/index/introducing-gpt-5/"
+    }
+  ]
 }

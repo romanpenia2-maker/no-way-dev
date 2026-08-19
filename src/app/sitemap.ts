@@ -4,7 +4,7 @@ import { getAllGuides } from "@/lib/guides";
 import { site } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const staticPages = ["", "/pricing", "/calculators/cost", "/guides", "/about", "/methodology"].map((p) => ({
+  const staticPages = ["", "/pricing", "/benchmarks", "/calculators/cost", "/guides", "/about", "/methodology"].map((p) => ({
     url: `${site.url}${p}`,
     changeFrequency: "weekly" as const,
     priority: p === "" ? 1 : 0.8,

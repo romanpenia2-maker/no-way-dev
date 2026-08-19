@@ -27,5 +27,57 @@
     "reasoning"
   ],
   "openWeights": false,
-  "lastVerifiedAt": "2025-11-01"
+  "lastVerifiedAt": "2025-11-01",
+  "arena": {
+    "elo": 1410,
+    "rank": 129,
+    "note": "preview-09-2025: 1404 Elo, rank 134",
+    "snapshotAt": "2026-08-13"
+  },
+  "benchmarks": [
+    {
+      "name": "GPQA Diamond",
+      "score": 82.8,
+      "testedAt": "2025-07-07",
+      "sourceUrl": "https://arxiv.org/abs/2507.06261"
+    },
+    {
+      "name": "AIME 2025",
+      "score": 72,
+      "testedAt": "2025-07-07",
+      "sourceUrl": "https://arxiv.org/abs/2507.06261"
+    },
+    {
+      "name": "SWE-bench Verified",
+      "score": 48.9,
+      "note": "single attempt; multi-attempt 60.3",
+      "testedAt": "2025-07-07",
+      "sourceUrl": "https://arxiv.org/abs/2507.06261"
+    },
+    {
+      "name": "LiveCodeBench",
+      "score": 59.3,
+      "testedAt": "2025-07-07",
+      "sourceUrl": "https://arxiv.org/abs/2507.06261"
+    },
+    {
+      "name": "Humanity's Last Exam",
+      "score": 11,
+      "note": "no tools",
+      "testedAt": "2025-07-07",
+      "sourceUrl": "https://arxiv.org/abs/2507.06261"
+    },
+    {
+      "name": "MMMU",
+      "score": 79.7,
+      "testedAt": "2025-07-07",
+      "sourceUrl": "https://arxiv.org/abs/2507.06261"
+    },
+    {
+      "name": "Global MMLU (Lite)",
+      "score": 88.4,
+      "testedAt": "2025-07-07",
+      "sourceUrl": "https://arxiv.org/abs/2507.06261"
+    }
+  ]
 }

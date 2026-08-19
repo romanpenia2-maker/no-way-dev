@@ -23,6 +23,22 @@ export const pricingEntrySchema = z.object({
   sourceUrl: z.string().url(),
 });
 
+export const benchmarkEntrySchema = z.object({
+  name: z.string().min(1),
+  score: z.number().nonnegative(),
+  note: z.string().min(1).optional(),
+  testedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "testedAt must be YYYY-MM-DD"),
+  sourceUrl: z.string().url(),
+});
+
+export const arenaSchema = z.object({
+  elo: z.number().int().positive(),
+  rank: z.number().int().positive(),
+  variant: z.string().min(1).optional(),
+  note: z.string().min(1).optional(),
+  snapshotAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "snapshotAt must be YYYY-MM-DD"),
+});
+
 export const modelSchema = z.object({
   slug: z.string().regex(/^[a-z0-9][a-z0-9.-]*$/, "slug must be kebab-case (dots allowed)"),
   name: z.string().min(1),
@@ -40,9 +56,13 @@ export const modelSchema = z.object({
   lastVerifiedAt: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "lastVerifiedAt must be YYYY-MM-DD"),
+  arena: arenaSchema.optional(),
+  benchmarks: z.array(benchmarkEntrySchema).optional(),
 });
 
 export type Capability = z.infer<typeof capabilitySchema>;
 export type ModelStatus = z.infer<typeof modelStatusSchema>;
 export type PricingEntry = z.infer<typeof pricingEntrySchema>;
+export type BenchmarkEntry = z.infer<typeof benchmarkEntrySchema>;
+export type ArenaEntry = z.infer<typeof arenaSchema>;
 export type Model = z.infer<typeof modelSchema>;

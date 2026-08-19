@@ -35,6 +35,12 @@ const tools = [
     title: "Guides",
     description: "Practical guides: how to compare API pricing, cut costs with caching, pick a model for a task.",
   },
+  {
+    href: "/benchmarks",
+    label: "T/04",
+    title: "Benchmarks",
+    description: "LMArena Elo ratings next to SWE-bench, GPQA, AIME and more — every score sourced, caveats flagged.",
+  },
 ];
 
 const howItWorks = [
@@ -190,7 +196,7 @@ export default function HomePage() {
       {/* Tools */}
       <section className="border-b border-line py-12">
         <h2 className="mb-6 font-display text-2xl font-bold uppercase leading-[0.94] tracking-[-0.02em]">Tools</h2>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {tools.map((t) => (
             <Link key={t.href} href={t.href} className="group">
               <Card className="h-full group-hover:bg-ink group-hover:text-paper [&_*]:group-hover:text-paper">

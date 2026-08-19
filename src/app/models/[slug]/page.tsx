@@ -149,6 +149,81 @@ export default async function ModelPage({ params }: Props) {
         </Table>
       </Card>
 
+      {model.arena || model.benchmarks?.length ? (
+        <section className="mb-8">
+          <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="font-display text-2xl font-bold uppercase leading-[0.94] tracking-[-0.02em]">
+              Arena &amp; benchmarks
+            </h2>
+            <Link
+              href="/benchmarks"
+              className="font-mono text-xs uppercase tracking-[0.08em] hover:underline hover:underline-offset-4"
+            >
+              Full leaderboard →
+            </Link>
+          </div>
+
+          {model.arena ? (
+            <div className="mb-4 flex flex-col gap-2 border border-ink p-4 sm:flex-row sm:items-center">
+              <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+                <span>
+                  <span className="font-mono text-2xl font-bold nums">{model.arena.elo}</span>{" "}
+                  <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">arena elo</span>
+                </span>
+                <span>
+                  <span className="font-mono text-2xl font-bold nums">#{model.arena.rank}</span>{" "}
+                  <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">arena rank</span>
+                </span>
+              </div>
+              <div className="font-mono text-[11px] text-ink2 sm:ml-auto sm:text-right">
+                {model.arena.variant ? <p>variant: {model.arena.variant}</p> : null}
+                <p className="nums">snapshot {formatDate(model.arena.snapshotAt)}</p>
+                {model.arena.note ? <p className="mt-1 max-w-md sm:ml-auto">{model.arena.note}</p> : null}
+              </div>
+            </div>
+          ) : null}
+
+          {model.benchmarks?.length ? (
+            <Card className="row-fade">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Benchmark</TableHead>
+                    <TableHead className="text-right">Score</TableHead>
+                    <TableHead className="hidden sm:table-cell">Tested</TableHead>
+                    <TableHead className="hidden md:table-cell">Note</TableHead>
+                    <TableHead className="hidden sm:table-cell">Source</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {model.benchmarks.map((b) => (
+                    <TableRow key={`${b.name}-${b.sourceUrl}`}>
+                      <TableCell className="font-semibold">{b.name}</TableCell>
+                      <TableCell className="text-right font-mono font-bold nums">
+                        {b.score.toFixed(1)}
+                      </TableCell>
+                      <TableCell className="hidden font-mono text-xs text-ink2 nums sm:table-cell">
+                        {formatDate(b.testedAt)}
+                      </TableCell>
+                      <TableCell className="hidden text-sm text-ink2 md:table-cell">{b.note ?? "—"}</TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <a
+                          href={b.sourceUrl}
+                          rel="noopener nofollow"
+                          className="font-mono text-xs underline underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline"
+                        >
+                          source ↗
+                        </a>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          ) : null}
+        </section>
+      ) : null}
+
       <div className="flex flex-col gap-3 border border-line p-4 text-sm text-ink2 sm:flex-row sm:items-center sm:justify-between">
         <span>
           Last verified:{" "}

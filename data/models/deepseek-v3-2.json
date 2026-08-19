@@ -33,5 +33,56 @@
   ],
   "openWeights": true,
   "license": "MIT",
-  "lastVerifiedAt": "2025-11-01"
+  "lastVerifiedAt": "2025-11-01",
+  "arena": {
+    "elo": 1425,
+    "rank": 101,
+    "variant": "deepseek-v3.2 (Thinking)",
+    "snapshotAt": "2026-08-13"
+  },
+  "benchmarks": [
+    {
+      "name": "SWE-bench Verified",
+      "score": 73.1,
+      "testedAt": "2025-12-01",
+      "sourceUrl": "https://arxiv.org/abs/2512.02556"
+    },
+    {
+      "name": "AIME 2025",
+      "score": 93.1,
+      "testedAt": "2025-12-01",
+      "sourceUrl": "https://arxiv.org/abs/2512.02556"
+    },
+    {
+      "name": "GPQA Diamond",
+      "score": 82.4,
+      "testedAt": "2025-12-01",
+      "sourceUrl": "https://arxiv.org/abs/2512.02556"
+    },
+    {
+      "name": "MMLU-Pro",
+      "score": 85,
+      "testedAt": "2025-12-01",
+      "sourceUrl": "https://arxiv.org/abs/2512.02556"
+    },
+    {
+      "name": "LiveCodeBench",
+      "score": 83.3,
+      "testedAt": "2025-12-01",
+      "sourceUrl": "https://arxiv.org/abs/2512.02556"
+    },
+    {
+      "name": "Humanity's Last Exam",
+      "score": 25.1,
+      "note": "text-only, no tools; 40.8 with tools",
+      "testedAt": "2025-12-01",
+      "sourceUrl": "https://arxiv.org/abs/2512.02556"
+    },
+    {
+      "name": "Terminal-Bench 2.0",
+      "score": 46.4,
+      "testedAt": "2025-12-01",
+      "sourceUrl": "https://arxiv.org/abs/2512.02556"
+    }
+  ]
 }

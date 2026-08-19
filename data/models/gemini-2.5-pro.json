@@ -12,7 +12,7 @@
     {
       "provider": "google",
       "inputPer1M": 1.25,
-      "outputPer1M": 10.0,
+      "outputPer1M": 10,
       "updatedAt": "2025-11-01",
       "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
       "cachedInputPer1M": 0.31
@@ -27,5 +27,58 @@
     "reasoning"
   ],
   "openWeights": false,
-  "lastVerifiedAt": "2025-11-01"
+  "lastVerifiedAt": "2025-11-01",
+  "arena": {
+    "elo": 1445,
+    "rank": 70,
+    "snapshotAt": "2026-08-13"
+  },
+  "benchmarks": [
+    {
+      "name": "GPQA Diamond",
+      "score": 86.4,
+      "testedAt": "2025-07-07",
+      "sourceUrl": "https://arxiv.org/abs/2507.06261"
+    },
+    {
+      "name": "AIME 2025",
+      "score": 88,
+      "testedAt": "2025-07-07",
+      "sourceUrl": "https://arxiv.org/abs/2507.06261"
+    },
+    {
+      "name": "LiveCodeBench",
+      "score": 74.2,
+      "note": "tech report; public LCB leaderboard (06-05 ckpt): 69.0",
+      "testedAt": "2025-07-07",
+      "sourceUrl": "https://arxiv.org/abs/2507.06261"
+    },
+    {
+      "name": "Humanity's Last Exam",
+      "score": 21.6,
+      "note": "no tools",
+      "testedAt": "2025-07-07",
+      "sourceUrl": "https://arxiv.org/abs/2507.06261"
+    },
+    {
+      "name": "MMMU",
+      "score": 82,
+      "testedAt": "2025-07-07",
+      "sourceUrl": "https://arxiv.org/abs/2507.06261"
+    },
+    {
+      "name": "Global MMLU (Lite)",
+      "score": 89.2,
+      "note": "classic MMLU not published by Google",
+      "testedAt": "2025-07-07",
+      "sourceUrl": "https://arxiv.org/abs/2507.06261"
+    },
+    {
+      "name": "SWE-bench Verified",
+      "score": 63.2,
+      "note": "custom agent scaffold; tech report: 59.6 single / 67.2 multi-attempt",
+      "testedAt": "2025-06-17",
+      "sourceUrl": "https://deepmind.google/models/gemini/pro/"
+    }
+  ]
 }
