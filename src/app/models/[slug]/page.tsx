@@ -278,12 +278,20 @@ export default async function ModelPage({ params }: Props) {
           </time>
           . Prices change — always confirm on the official page before budgeting.
         </span>
-        <Link
-          href="/calculators/cost"
-          className="shrink-0 font-mono text-xs uppercase tracking-[0.08em] text-ink hover:underline hover:underline-offset-4"
-        >
-          Estimate monthly cost →
-        </Link>
+        <span className="flex shrink-0 items-center gap-4">
+          <Link
+            href={`/compare?models=${model.slug}`}
+            className="font-mono text-xs uppercase tracking-[0.08em] text-ink hover:underline hover:underline-offset-4"
+          >
+            Compare →
+          </Link>
+          <Link
+            href="/calculators/cost"
+            className="font-mono text-xs uppercase tracking-[0.08em] text-ink hover:underline hover:underline-offset-4"
+          >
+            Estimate monthly cost →
+          </Link>
+        </span>
       </div>
     </div>
   );

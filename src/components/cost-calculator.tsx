@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   Bar,
@@ -33,6 +34,14 @@ function parseNumberParam(searchParams: URLSearchParams | null, key: string, fal
   return Math.min(parsed, MAX_PARAM);
 }
 
+/** Cached-input share, percent 0–90 (0 is a valid value, unlike the volume params). */
+function parseCacheParam(searchParams: URLSearchParams | null): number {
+  const raw = searchParams?.get("cache");
+  const parsed = raw === null || raw === undefined ? NaN : Number(raw);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 90) return 0;
+  return parsed;
+}
+
 /** Never render "$∞" — fall back to an em dash for non-finite amounts. */
 function safeFormatUsd(value: number): string {
   return Number.isFinite(value) ? formatUsd(value) : "—";
@@ -51,19 +60,26 @@ export function CostCalculator({
   const [requestsPerDay, setRequestsPerDay] = useState(() => parseNumberParam(searchParams, "rpd", 10000));
   const [inputTokens, setInputTokens] = useState(() => parseNumberParam(searchParams, "in", 1000));
   const [outputTokens, setOutputTokens] = useState(() => parseNumberParam(searchParams, "out", 500));
+  const [cachePct, setCachePct] = useState(() => parseCacheParam(searchParams));
   const [copied, setCopied] = useState(false);
 
   const costs: CostRow[] = useMemo(() => {
     const monthlyRequests = requestsPerDay * 30;
+    const cacheShare = cachePct / 100;
     return rows
-      .map((row) => ({
-        ...row,
-        monthlyCost:
-          (monthlyRequests * inputTokens * row.inputPer1M) / 1_000_000 +
-          (monthlyRequests * outputTokens * row.outputPer1M) / 1_000_000,
-      }))
+      .map((row) => {
+        // Cached share of input bills at the cached rate where one is published.
+        const effectiveInput =
+          (1 - cacheShare) * row.inputPer1M + cacheShare * (row.cachedInputPer1M ?? row.inputPer1M);
+        return {
+          ...row,
+          monthlyCost:
+            (monthlyRequests * inputTokens * effectiveInput) / 1_000_000 +
+            (monthlyRequests * outputTokens * row.outputPer1M) / 1_000_000,
+        };
+      })
       .sort((a, b) => a.monthlyCost - b.monthlyCost);
-  }, [rows, requestsPerDay, inputTokens, outputTokens]);
+  }, [rows, requestsPerDay, inputTokens, outputTokens, cachePct]);
 
   const top10 = costs.slice(0, 10);
   const top6 = costs.slice(0, 6);
@@ -72,8 +88,9 @@ export function CostCalculator({
   // Keep the URL in sync so the state is shareable/bookmarkable.
   useEffect(() => {
     const params = new URLSearchParams({ rpd: String(requestsPerDay), in: String(inputTokens), out: String(outputTokens) });
+    if (cachePct > 0) params.set("cache", String(cachePct));
     window.history.replaceState(null, "", `?${params.toString()}`);
-  }, [requestsPerDay, inputTokens, outputTokens]);
+  }, [requestsPerDay, inputTokens, outputTokens, cachePct]);
 
   const share = useCallback(async () => {
     try {
@@ -85,24 +102,29 @@ export function CostCalculator({
     }
   }, []);
 
-  const fields: { label: string; value: number; set: (n: number) => void }[] = [
-    { label: "Requests / day", value: requestsPerDay, set: setRequestsPerDay },
-    { label: "Avg input tokens / request", value: inputTokens, set: setInputTokens },
-    { label: "Avg output tokens / request", value: outputTokens, set: setOutputTokens },
+  const fields: { label: string; value: number; set: (n: number) => void; min: number; max?: number }[] = [
+    { label: "Requests / day", value: requestsPerDay, set: setRequestsPerDay, min: 1 },
+    { label: "Avg input tokens / request", value: inputTokens, set: setInputTokens, min: 1 },
+    { label: "Avg output tokens / request", value: outputTokens, set: setOutputTokens, min: 1 },
+    { label: "Cached input %", value: cachePct, set: setCachePct, min: 0, max: 90 },
   ];
 
   return (
     <div className="space-y-8">
       <Card className="p-4 sm:p-6">
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {fields.map((f) => (
             <label key={f.label} className="space-y-1.5">
               <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">{f.label}</span>
               <Input
                 type="number"
-                min={1}
+                min={f.min}
+                max={f.max}
                 value={f.value}
-                onChange={(e) => f.set(Math.max(1, Number(e.target.value) || 1))}
+                onChange={(e) => {
+                  const n = Number(e.target.value) || 0;
+                  f.set(Math.min(f.max ?? Infinity, Math.max(f.min, n)));
+                }}
               />
             </label>
           ))}
@@ -121,7 +143,7 @@ export function CostCalculator({
       <Card className="p-4 sm:p-6">
         <div className="mb-4 flex items-baseline justify-between gap-2">
           <h2 className="font-display text-lg font-bold uppercase leading-[0.94] tracking-[-0.02em]">
-            Top 10 cheapest — monthly cost
+            Top cheapest — monthly cost
           </h2>
           <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">usd / month</span>
         </div>
@@ -205,7 +227,12 @@ export function CostCalculator({
                   {String(i + 1).padStart(2, "0")}
                 </TableCell>
                 <TableCell className="font-semibold">
-                  {row.modelName}
+                  <Link
+                    href={`/models/${row.modelSlug}`}
+                    className="underline-offset-4 hover:underline"
+                  >
+                    {row.modelName}
+                  </Link>
                   {isOffPeakNote(row.note) ? (
                     <sup className="ml-0.5 font-bold" title="Off-peak rate; peak windows bill 2×">
                       †
@@ -226,6 +253,11 @@ export function CostCalculator({
           </p>
         ) : null}
       </Card>
+
+      <p className="font-mono text-[11px] leading-5 text-ink2">
+        Excludes batch/volume discounts and tiered pricing (DeepSeek peak ×2, long-context tiers). Cached rate
+        applied where published.
+      </p>
     </div>
   );
 }

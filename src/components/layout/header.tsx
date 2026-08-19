@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 const nav = [
   { href: "/pricing", label: "Pricing", match: "/pricing" },
   { href: "/benchmarks", label: "Benchmarks", match: "/benchmarks" },
+  { href: "/compare", label: "Compare", match: "/compare" },
   { href: "/calculators/cost", label: "Calculator", match: "/calculators" },
   { href: "/guides", label: "Guides", match: "/guides" },
   { href: "/about", label: "About", match: "/about" },

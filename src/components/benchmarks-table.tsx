@@ -15,13 +15,17 @@ import {
   type LeaderboardRow,
 } from "@/lib/arena";
 import type { ArenaCategory } from "@data/schemas/model.schema";
+import { ExportButtons } from "@/components/export-buttons";
+import { toCsv, toMarkdown } from "@/lib/export";
+import { valueScore } from "@/lib/value";
 import { cn, formatCompact, formatDate, formatPricePer1M, formatTokens } from "@/lib/utils";
 
-type SortKey = "model" | "score" | "rank" | "ci" | "swe" | "terminal" | "gpqa" | "hle";
+type SortKey = "model" | "score" | "value" | "rank" | "ci" | "swe" | "terminal" | "gpqa" | "hle";
 
 const columns: { key: SortKey; label: string; numeric?: boolean; hideBelowLg?: boolean }[] = [
   { key: "model", label: "Model" },
   { key: "score", label: "Arena score", numeric: true },
+  { key: "value", label: "Value †", numeric: true },
   { key: "rank", label: "Rank", numeric: true },
   { key: "ci", label: "CI ±", numeric: true, hideBelowLg: true },
   { key: "swe", label: "SWE-bench Pro", numeric: true, hideBelowLg: true },
@@ -38,6 +42,8 @@ function valueOf(row: LeaderboardRow, key: SortKey): number | undefined {
   switch (key) {
     case "score":
       return row.arena.elo;
+    case "value":
+      return valueScore(row.arena.elo, row.priceIn, row.priceOut);
     case "rank":
       return row.arena.rank;
     case "ci":
@@ -192,6 +198,12 @@ function ExpandedPanel({
           {formatPricePer1M(row.priceOut)}
         </span>
         <Link
+          href={`/compare?models=${row.modelSlug}`}
+          className="text-ink underline underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline"
+        >
+          Compare →
+        </Link>
+        <Link
           href={`/models/${row.modelSlug}`}
           className="ml-auto text-ink underline underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline"
         >
@@ -291,6 +303,24 @@ export function BenchmarksExplorer({
     }
   }
 
+  // Export mirrors the active slice table: same columns, same visible order.
+  const exportHeader = ["Model", "Arena score", "Value", "Rank", "CI ±", "SWE-bench Pro", "Terminal-Bench", "GPQA", "HLE"];
+  const exportRows = useMemo(
+    () =>
+      sorted.map((row) => [
+        row.modelName,
+        row.arena.elo,
+        valueScore(row.arena.elo, row.priceIn, row.priceOut) ?? "—",
+        row.arena.rank,
+        row.arena.ci,
+        row.sweBenchPro ? row.sweBenchPro.score.toFixed(1) : "—",
+        row.terminalBench ? row.terminalBench.score.toFixed(1) : "—",
+        row.gpqa ? row.gpqa.score.toFixed(1) : "—",
+        row.hle ? row.hle.score.toFixed(1) : "—",
+      ]),
+    [sorted],
+  );
+
   const top = slice.rows[0];
   const stats: { label: string; value: string; trend: string; small?: boolean }[] = [
     {
@@ -359,34 +389,39 @@ export function BenchmarksExplorer({
           ))}
         </div>
 
-        {/* Mobile sort control (columns are not tappable on small screens) */}
-        <div className="flex items-center gap-2 md:hidden">
-          <label
-            htmlFor="benchmarks-sort"
-            className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2"
-          >
-            Sort by
-          </label>
-          <Select
-            id="benchmarks-sort"
-            value={sortKey}
-            onChange={(e) => toggleSort(e.target.value as SortKey)}
-            className="w-40"
-          >
-            {columns.map((col) => (
-              <option key={col.key} value={col.key}>
-                {col.label}
-              </option>
-            ))}
-          </Select>
-          <button
-            type="button"
-            onClick={() => setSortAsc(!sortAsc)}
-            aria-label={sortAsc ? "Sort descending" : "Sort ascending"}
-            className="flex h-9 w-9 items-center justify-center border border-ink font-mono text-sm hover:bg-ink hover:text-paper"
-          >
-            {sortAsc ? "↑" : "↓"}
-          </button>
+        {/* Mobile sort control (columns are not tappable on small screens) + export */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 md:hidden">
+            <label
+              htmlFor="benchmarks-sort"
+              className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2"
+            >
+              Sort by
+            </label>
+            <Select
+              id="benchmarks-sort"
+              value={sortKey}
+              onChange={(e) => toggleSort(e.target.value as SortKey)}
+              className="w-40"
+            >
+              {columns.map((col) => (
+                <option key={col.key} value={col.key}>
+                  {col.label}
+                </option>
+              ))}
+            </Select>
+            <button
+              type="button"
+              onClick={() => setSortAsc(!sortAsc)}
+              aria-label={sortAsc ? "Sort descending" : "Sort ascending"}
+              className="flex h-9 w-9 items-center justify-center border border-ink font-mono text-sm hover:bg-ink hover:text-paper"
+            >
+              {sortAsc ? "↑" : "↓"}
+            </button>
+          </div>
+          <div className="ml-auto">
+            <ExportButtons csv={toCsv(exportHeader, exportRows)} markdown={toMarkdown(exportHeader, exportRows)} />
+          </div>
         </div>
 
         {/* Desktop table */}
@@ -442,6 +477,11 @@ export function BenchmarksExplorer({
                         ) : null}
                       </TableCell>
                       <TableCell className="text-right font-mono font-bold nums">{row.arena.elo}</TableCell>
+                      <TableCell className="text-right font-mono nums">
+                        {valueScore(row.arena.elo, row.priceIn, row.priceOut) ?? (
+                          <span className="text-ink2">—</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right font-mono text-ink2 nums">{row.arena.rank}</TableCell>
                       <TableCell className="hidden text-right font-mono text-ink2 nums lg:table-cell">
                         {row.arena.ci}
@@ -514,6 +554,7 @@ export function BenchmarksExplorer({
                     </Badge>
                     <span>rank {row.arena.rank}</span>
                     <span>±{row.arena.ci}</span>
+                    <span>value {valueScore(row.arena.elo, row.priceIn, row.priceOut) ?? "—"}</span>
                     {row.sweBenchPro ? <span>swe-pro {row.sweBenchPro.score.toFixed(1)}</span> : null}
                     {row.terminalBench ? <span>tb {row.terminalBench.score.toFixed(1)}</span> : null}
                   </div>
@@ -541,7 +582,8 @@ export function BenchmarksExplorer({
         <p className="font-mono text-[11px] leading-5 text-ink2">
           — not measured / not published · <sup className="font-bold">†</sup> score has a caveat — focus or tap the
           marker for details, see footnotes below · <span className="font-bold">P</span> preliminary rating (low vote
-          count) · sort by any column · open a row for full arena &amp; benchmark data.
+          count) · Value <sup className="font-bold">†</sup> = arena score per $1 of blended price (3:1 input/output
+          mix) · sort by any column · open a row for full arena &amp; benchmark data.
         </p>
       </div>
     </div>

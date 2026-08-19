@@ -140,10 +140,29 @@
   display: none;
 }
 
+/* Deep-link anchor flash: ink background fades out over 600ms (#row-<slug>) */
+@keyframes row-flash {
+  0% {
+    background-color: var(--px);
+    color: var(--paper);
+  }
+  100% {
+    background-color: transparent;
+    color: inherit;
+  }
+}
+.row-flash {
+  animation: row-flash 600ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .row-fade,
   .slice-enter {
     animation: none;
+  }
+  .row-flash {
+    animation: none;
+    outline: 2px solid var(--px);
   }
   .expand-grid,
   .chevron {
