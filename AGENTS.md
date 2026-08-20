@@ -10,6 +10,7 @@ Read this file before any work. Product context: `PROJECT_CONTEXT.md`. Ops incid
 4. **Secrets.** Tokens/keys never appear in commits, issues, PRs, or logs — only GitHub Secrets / Vercel env. Never hand-edit `package-lock.json`; lockfile mirror URLs (non-`registry.npmjs.org`) are forbidden.
 5. **Data.** Every number needs `sourceUrl` + `updatedAt`. Run `npm run validate-data` before committing data. CI gates: `lint + typecheck + validate-data + build` must all pass.
 6. **Environment gotchas.** Runners need Node 24 + `npm i -g npm@latest` (runner npm bug). Vercel deploys via CLI `vercel build` + `vercel deploy --prebuilt` — Git integration is disabled by design. Vercel `has` conditions combine with AND.
+7. **Owner escalation via Telegram panel.** When a decision, extra info, an action, or an optimal paid spend is needed from the owner, notify the TG panel IMMEDIATELY — do not wait silently: dispatch `tg-notify.yml` (`gh workflow run tg-notify.yml -f text="..."` or the Actions dispatch API on `rc`). Message format: short context + numbered options + your recommendation + cost if any. Owner replies arrive as GitHub issues (`idea` = new text, `answer` = reply to a bot message).
 
 ## Repository map (verified against the code)
 
