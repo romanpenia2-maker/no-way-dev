@@ -1,0 +1,26 @@
+name: Telegram notify (agent → owner)
+
+on:
+  workflow_dispatch:
+    inputs:
+      text:
+        description: "Message text: question + numbered options + comment"
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send message to owner TG panel
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          OWNER_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TEXT: ${{ inputs.text }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot$TG_TOKEN/sendMessage" \
+            -d "chat_id=$OWNER_CHAT" --data-urlencode "text=$TEXT" \
+            -d "disable_web_page_preview=true" > resp.json
+          python3 -c "import json; d=json.load(open('resp.json')); print('telegram ok:', d.get('ok')); exit(0 if d.get('ok') else 1)"
