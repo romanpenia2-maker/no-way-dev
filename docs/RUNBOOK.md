@@ -45,3 +45,14 @@ Never disable or delete the check to make the workflow green — a staging site 
 ## Broken production (site down or wrong content live)
 
 **Notify the owner immediately** (comment on the relevant PR/issue; Telegram notification fires automatically from the deploy workflow). Then alias-rollback if a previous deployment is healthy. Do not attempt hotfix commits to `main`.
+
+## AI detector env keys (/api/detect)
+
+The detector fails closed: a missing key disables only its own layer (the response shows `layers.<name>.state = "unavailable"`), the endpoint stays up. If users report "no numeric score", check which keys are set in Vercel env:
+
+- `DEEPINFRA_API_KEY` — powers zero-shot scoring AND attribution. If scoring errors with `echo unsupported` or HTTP 4xx from `api.deepinfra.com/v1/openai/completions`, the provider dropped echo-logprobs: switch to the Together fallback (`TOGETHER_API_KEY`) and re-fit `scoreMidpoint`/`scoreScale` in `data/detector/thresholds.json` (SMOKE-TEST TODO in `src/lib/detector/zeroshot.ts`).
+- `TOGETHER_API_KEY` — fallback provider, used only when the DeepInfra key is absent.
+- `SIGHTENGINE_API_USER` / `SIGHTENGINE_API_SECRET` — image second opinion; free tier ~2000 ops/month. Quota exhaustion shows up as `layers.external.state = "error"` with the Sightengine message.
+- `SAPLING_API_KEY` — text second opinion, called only for borderline scores to bound cost.
+
+Rate limiting is in-memory per serverless instance (30/hour/IP) — it caps casual abuse, not distributed attacks. If abuse appears, move `src/lib/detector/rate-limit.ts` to a durable store before raising limits.

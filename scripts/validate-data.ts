@@ -8,9 +8,15 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import type { z } from "zod";
 import { modelSchema, type Model } from "../data/schemas/model.schema";
 import { providerSchema, type Provider } from "../data/schemas/provider.schema";
 import { benchmarksMetaSchema } from "../data/schemas/benchmarks-meta.schema";
+import {
+  attributionConfigSchema,
+  detectorCopySchema,
+  detectorThresholdsSchema,
+} from "../data/schemas/detector.schema";
 
 const strict = process.argv.includes("--strict");
 
@@ -18,6 +24,7 @@ const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const modelsDir = path.join(root, "data", "models");
 const providersDir = path.join(root, "data", "providers");
 const metaDir = path.join(root, "data", "meta");
+const detectorDir = path.join(root, "data", "detector");
 
 let errors = 0;
 let checked = 0;
@@ -121,6 +128,44 @@ if (fs.existsSync(metaDir)) {
       }
     } catch (e) {
       fail(`data/meta/${file}`, `invalid JSON: ${(e as Error).message}`);
+    }
+  }
+}
+
+// --- Detector config ---------------------------------------------------------
+// Every file in data/detector/ must have a registered schema (same rule as
+// data/meta/): an unknown file is an error, a known file must parse.
+const detectorSchemas: Record<string, z.ZodTypeAny> = {
+  "thresholds.json": detectorThresholdsSchema,
+  "attribution.json": attributionConfigSchema,
+  "copy.json": detectorCopySchema,
+};
+if (fs.existsSync(detectorDir)) {
+  const files = readJsonFiles(detectorDir);
+  for (const required of Object.keys(detectorSchemas)) {
+    if (!files.includes(required)) {
+      fail(`data/detector/${required}`, "required detector config file is missing");
+    }
+  }
+  for (const file of files) {
+    const full = path.join(detectorDir, file);
+    checked += 1;
+    const schema = detectorSchemas[file];
+    if (!schema) {
+      fail(`data/detector/${file}`, "no schema registered for this detector file");
+      continue;
+    }
+    try {
+      const raw = JSON.parse(fs.readFileSync(full, "utf8"));
+      const parsed = schema.safeParse(raw);
+      if (!parsed.success) {
+        fail(
+          `data/detector/${file}`,
+          parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "),
+        );
+      }
+    } catch (e) {
+      fail(`data/detector/${file}`, `invalid JSON: ${(e as Error).message}`);
     }
   }
 }
