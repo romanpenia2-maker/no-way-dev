@@ -1,0 +1,472 @@
+# /ai-detector — UX-карта, иерархия ценности, спеки состояний
+
+**Проект:** no-way.dev · раздел `/ai-detector` · дата спеки: 2026-08-20
+**Основано на:** `src/components/ai-detector.tsx`, `src/app/ai-detector/page.tsx`, `src/app/api/detect/route.ts`, `src/lib/detector/*.ts`, `data/detector/copy.json`, `data/detector/thresholds.json` (ветка `rc`).
+**Назначение документа:** спека для кодера. Каждое решение однозначно, с обоснованием в одну строку.
+
+## 0. Глобальные принципы (обязательны для всех экранов)
+
+1. **Правило 3 секунд.** Любой экран результата обязан за 3 секунды ответить на два вопроса: «какой вердикт?» и «что мне с этим делать?». Всё, что не отвечает на эти вопросы, — secondary или hidden.
+2. **Один primary на экран.** Primary = единственный самый контрастный блок (solid-бейдж + крупная цифра/заголовок вердикта). Никогда два primary рядом.
+3. **Иерархия без новых цветов.** Только размер, вес, яркость (`--px` vs `--px2`), отступы, толщина рамки. Токены представления:
+   - **primary:** `--px`, `border-[1.5px] border-ink`, solid badge (`bg-ink text-paper`), цифра `font-mono text-2xl font-bold`.
+   - **secondary:** `--px2`, `text-[11px]–text-sm`, рамка `border-line` или без рамки.
+   - **hidden:** `<details>` закрытый по умолчанию, summary `text-ink2`, min-height 44px.
+4. **Честность = фича бренда.** «Insufficient data» и «слой недоступен» — не ошибки, а заявленное поведение; подаём их уверенно, с объяснением и следующим шагом, не как сбой.
+5. **Никакого raw-технического в primary.** Layer states, manifest dump, claim generator, provider names, token counts — hidden. Исключение: когда отсутствие ML-слоёв — единственная причина отсутствия вердикта, факт недоступности поднимается в primary-уведомление (но не техдетали).
+6. **Touch ≥ 44px, фокус видим всегда.** Все интерактивные элементы min-height 44px; `:focus-visible` — `ring-1 ring-ink` (уже есть в textarea, распространить на details/summary и спаны).
+7. **Прогрессивное раскрытие по визитам.** Первый визит — ориентация развёрнута; возвращающийся (localStorage `aidetector.visited=1`, ставится после первого успешного результата) — ориентация свёрнута в одну строку-ссылку.
+
+---
+
+## 1. Карта поведения пользователя (дерево сценариев)
+
+Обозначения: **[S-xx]** — терминальное состояние, спека в разделе 3. Модификаторы (первый визит / мобильный 360px) применяются ко всем листьям и описаны в 1.3, а не дублируют дерево.
+
+### 1.1 Дерево
+
+```
+ВХОД НА /ai-detector
+│
+├── A. ПУСТОЕ СОСТОЯНИЕ (ничего не введено)
+│    ├── A1. Первый визит, таб Text (дефолт) .................. [S-EMPTY-FIRST]
+│    ├── A2. Возвращающийся пользователь ...................... [S-EMPTY-RETURN]
+│    └── A3. Диплинк ?kind=code|image (открыт не-дефолтный таб) [S-EMPTY-FIRST с kind-специфичным placeholder]
+│
+├── B. ВВОД: ТЕКСТ (пользователь печатает/вставляет)
+│    ├── B1. 1–149 слов (ниже гейта minWords=150)
+│    │    └── submit недоступен + счётчик объясняет ........... [S-GATE-SHORT-TEXT]
+│    ├── B2. > 20 000 слов (maxWords)
+│    │    └── submit недоступен + счётчик красн... (монохром: жирный) [S-GATE-LONG-TEXT]
+│    ├── B3. Валидный текст → «Run detection»
+│    │    ├── СИСТЕМА: все слои ok
+│    │    │    ├── p ≥ 0.80 .................................. [S-RES-CONF-AI]
+│    │    │    ├── 0.55 ≤ p < 0.80 ........................... [S-RES-LIKELY-AI]
+│    │    │    ├── 0.20 < p < 0.55 (abstention band) ......... [S-RES-ABSTAIN]
+│    │    │    ├── 0.20 ≥ p > 0.45... (симметрично: 1−τ) .... [S-RES-LIKELY-HUMAN]
+│    │    │    └── p ≤ 0.20 .................................. [S-RES-CONF-HUMAN]
+│    │    ├── СИСТЕМА: граничный p + Sapling сконфигурирован
+│    │    │    └── объединённый вердикт с note ............... [S-RES-BORDERLINE-EXT]
+│    │    ├── СИСТЕМА: нет LLM-ключа, нет Sapling
+│    │    │    └── вердикт невозможен ........................ [S-NO-ML]
+│    │    ├── СИСТЕМА: нет LLM-ключа, Sapling есть
+│    │    │    └── вердикт по одному внешнему сигналу ........ [S-EXT-ONLY]
+│    │    ├── СИСТЕМА: zeroshot=error (провайдер упал/таймаут)
+│    │    │    ├── Sapling подхватил ......................... [S-EXT-ONLY]
+│    │    │    └── нет ....................................... [S-NO-ML] (вариант error)
+│    │    ├── СИСТЕМА: 429 rate-limit ......................... [S-RATE-LIMIT]
+│    │    ├── СИСТЕМА: сеть/500/таймаут fetch ................. [S-NETWORK-ERR]
+│    │    └── ВВОД: не-английский текст (атрибуция skipped)
+│    │         └── вердикт + note про English-only ........... [S-RES-*] + note
+│
+├── C. ВВОД: КОД
+│    ├── C1. 1–39 непустых строк (minLines=40) ................ [S-GATE-SHORT-CODE]
+│    ├── C2. > 50 000 символов ................................ [S-GATE-LONG-CODE]
+│    └── C3. Валидный код → те же ветки, что B3, кроме:
+│         external всегда skipped («нет надёжного внешнего
+│         детектора кода») → граничные вердикты без второго
+│         мнения .............................................. [S-RES-ABSTAIN] (чаще, чем для текста)
+│
+├── D. ВВОД: ИЗОБРАЖЕНИЕ
+│    ├── D1. Файл не выбран, клик «Run detection» ............. кнопка disabled (не состояние)
+│    ├── D2. Файл > 8 MB ...................................... [S-IMG-TOO-BIG]
+│    ├── D3. Неподдержанный/битый файл (не PNG/JPEG/WebP/GIF,
+│    │    или повреждён) ....................................... [S-IMG-BAD-FORMAT]
+│    ├── D4. Файл принят → C2PA-чтение в браузере (WASM ~11 MB
+│    │    грузится по требованию; на слабом канале — секунды)
+│    │    ├── загрузка WASM/чтение ............................. [S-IMG-C2PA-LOADING]
+│    │    ├── C2PA valid + AI claim generator ................. [S-IMG-C2PA-AI]  (API НЕ вызывается)
+│    │    ├── C2PA valid, без AI claim (камера и т.п.) ......... [S-IMG-C2PA-NOAI] (API НЕ вызывается)
+│    │    ├── C2PA INVALID (манифест есть, подпись битая) ...... [S-IMG-C2PA-INVALID]
+│    │    │    └── пользователь нажимает «Check anyway» ....... → D5
+│    │    ├── C2PA none (нет манифеста) ........................ → D5
+│    │    └── C2PA unavailable (WASM упал/CSP/старый браузер) .. → D5 + inline-заметка
+│    └── D5. «Run detection» → сервер (метаданные + Sightengine)
+│         ├── strong AI-сигнал в метаданных (A1111 parameters,
+│         │   ComfyUI workflow, строка генератора) ............. [S-RES-CONF-AI] (provenance-driven)
+│         ├── сигналов нет + Sightengine ok .................... [S-RES-*] по p Sightengine
+│         ├── сигналов нет + Sightengine не сконфигурирован .... [S-IMG-NO-SIGNALS]
+│         ├── сигналов нет + Sightengine error ................. [S-IMG-NO-SIGNALS] (вариант error)
+│         ├── слабый human-сигнал (EXIF камеры) ................ [S-RES-*] + note (EXIF — слабый сигнал)
+│         ├── 429 .............................................. [S-RATE-LIMIT]
+│         └── сеть/500 ......................................... [S-NETWORK-ERR]
+│
+└── E. ПОСЛЕ РЕЗУЛЬТАТА (любого)
+     ├── E1. Правка текста в textarea → результат сбрасывается . [S-RES-STALE-GUARD] (текущее поведение: reset — сохранить)
+     ├── E2. Смена таба → полный reset ......................... (текущее поведение — сохранить)
+     ├── E3. «Check another» — явный сброс ..................... [S-EMPTY-RETURN]
+     ├── E4. Повторный submit тем же входом .................... (разрешён; тратит rate-limit — предупреждение в secondary)
+     └── E5. Пользователь раскрывает техдетали/How it works .... hidden-аккордеоны, не листья дерева
+```
+
+**Итого терминальных состояний: 24** (S-EMPTY-FIRST, S-EMPTY-RETURN, S-GATE-SHORT-TEXT, S-GATE-LONG-TEXT, S-GATE-SHORT-CODE, S-GATE-LONG-CODE, S-RES-CONF-AI, S-RES-LIKELY-AI, S-RES-ABSTAIN, S-RES-LIKELY-HUMAN, S-RES-CONF-HUMAN, S-RES-BORDERLINE-EXT, S-NO-ML, S-EXT-ONLY, S-RATE-LIMIT, S-NETWORK-ERR, S-IMG-TOO-BIG, S-IMG-BAD-FORMAT, S-IMG-C2PA-LOADING, S-IMG-C2PA-AI, S-IMG-C2PA-NOAI, S-IMG-C2PA-INVALID, S-IMG-NO-SIGNALS, S-RES-STALE-GUARD).
+
+### 1.2 Что пользователь видит / делает / может понять неправильно — по листьям
+
+| Лист | Видит (1 строка) | Ожидаемое действие | Главный риск неверного понимания |
+|---|---|---|---|
+| S-EMPTY-FIRST | H1, 3 таба, пустое поле с placeholder и минимумами, 3-шаговая ориентация, How-it-works ниже | Вставить контент или открыть пример | Думает, что 2 предложения хватит для вердикта |
+| S-EMPTY-RETURN | То же без ориентации, компактнее | Сразу вставить контент | — |
+| S-GATE-SHORT-TEXT/-CODE | Счётчик «87 words — need 150+», disabled CTA с объяснением | Дописать/вставить больше или уйти | Обходит гейт «лорем-ипсумом» и получает шум |
+| S-GATE-LONG-TEXT/-CODE | Счётчик «24,300 words — limit 20,000», disabled CTA, подсказка обрезать | Обрезать вход | Думает, что сайт сломан |
+| S-RES-CONF-AI | Solid-бейдж «Confident: AI-generated», 91%, CI-бар, что делать дальше | Принять вердикт как сильный сигнал, сверить спаны | Считает 91% «доказательством»; обвиняет автора |
+| S-RES-LIKELY-AI | Бейдж + p + широкий CI | Трактовать как «скорее», искать подтверждения | Путает likely с confident |
+| S-RES-ABSTAIN | «Insufficient data» + объяснение abstention-зоны + что прислать | Прислать другой/длинный образец, не делать вывод | Читает как «сервис не работает» |
+| S-RES-LIKELY-HUMAN / CONF-HUMAN | Бейдж + низкий p | Принять как сигнал «похоже на человека» | Считает это гарантией авторства (обрезанный AI-текст проходит) |
+| S-RES-BORDERLINE-EXT | Вердикт + note «включено второе мнение Sapling» | Учесть, что CI расширен | Думает, что два сигнала = точность выше (на самом деле CI шире) |
+| S-NO-ML | Честное уведомление «ML-слои не настроены на этом деплое», вердикт невозможен | Понять ограничение; для текста — нет обходного пути | Ждёт, что «ещё раз нажать» поможет |
+| S-EXT-ONLY | Вердикт с явной пометкой «single external signal» | Трактовать с осторожностью | Не замечает, что сигнал один |
+| S-RATE-LIMIT | Карточка с таймером «try again in 47 min», что произошло | Вернуться позже; для картинки — C2PA всё ещё локально доступен | Думает, что забанен навсегда |
+| S-NETWORK-ERR | Карточка ошибки + Retry CTA, вход сохранён | Нажать Retry | Теряет вставленный текст (нельзя: текст остаётся в textarea) |
+| S-IMG-TOO-BIG | Ошибка у dropzone + лимит, превью НЕ показывается | Сжать/обрезать файл | Не понимает, почему 9 MB «много» |
+| S-IMG-BAD-FORMAT | Ошибка «формат не поддерживается/файл повреждён», список PNG/JPEG | Конвертировать в PNG/JPEG | Скармливает WebP/GIF и ждёт полноценный анализ (для них — только скан строк) |
+| S-IMG-C2PA-LOADING | Индикатор «Reading signature in your browser…» в dropzone | Ждать (на 3G — до ~10 c) | Думает, что файл уже ушёл на сервер |
+| S-IMG-C2PA-AI | Локальный вердикт «Signed: AI-generated (C2PA)», кто подписал, «файл не загружался» | Доверить вердикт; ничего не отправлять | Думает, что подпись можно подделать так же легко, как метаданные |
+| S-IMG-C2PA-NOAI | «Signed, no AI claim» + объяснение «камеры тоже подписывают» | Понять: происхождение = заявленное подписантом | Читает как «точно человек» — а это лишь «нет AI-claim» |
+| S-IMG-C2PA-INVALID | Предупреждение «подпись INVALID — файл/метаданные менялись после подписи» + CTA «Check anyway» | Либо принять факт подделки, либо проверить статистически | Паника: «invalid = точно AI» (неверно: причина может быть в реэкспорте) |
+| S-IMG-NO-SIGNALS | «Insufficient data» для картинки: метаданных нет, внешний детектор не настроен; что это значит | Прислать оригинал с метаданными / понять лимит | Выводит «нет метаданных = человек» (прямо запрещено копирайтом) |
+| S-RES-STALE-GUARD | После правки входа результат исчезает, CTA снова активна | Перезапустить проверку | Скриншотит старый вердикт рядом с новым текстом |
+
+### 1.3 Модификаторы (применяются поверх всех листьев)
+
+**Первый визит vs возвращающийся.**
+- Признак: localStorage `aidetector.visited`. Ставится после первого `phase === "done"` (любой вердикт) и после C2PA-вердикта. Обоснование: ориентация нужна ровно один раз; дальше она — шум над фолдом.
+- Первый визит: под полем ввода виден блок «How to get a reliable verdict» (3 строки, secondary). Возвращающийся: блок заменён одной строкой-ссылкой `text-[11px] text-ink2 underline` → открывает тот же текст в `<details>`.
+
+**Десктоп vs мобильный 360px.**
+- Табы: 3 равные кнопки в ряд сохраняются и на 360px (min-h-11 уже есть, лейблы короткие) — не менять.
+- Карточка результата: бейдж и цифра вероятности переносятся в колонку (уже `flex-wrap` — сохранить); цифра остаётся `text-2xl`, не уменьшать — она primary.
+- Миниатюра картинки: 96px на мобильном (`h-24 w-24`), 128px с `sm:` (уже есть — сохранить).
+- Атрибуция (теперь hidden): label `w-40` → на <400px `w-28` + truncate; процент всегда виден.
+- Спаны: на тач-устройствах нет hover → score показывается по тапу (спека S-SPANS-INTERACTION ниже). Контейнер `max-h-72 overflow-y-auto` сохранить; добавить `-webkit-overflow-scrolling: touch`.
+- How-it-works: аккордеоны на всю ширину, summary min-h-11 — уже соответствует, сохранить.
+- Правило компоновки на мобильном: вердикт + цифра + «что делать» помещаются в первый экран после скролла к карточке; превью картинки НЕ выше вердикта (см. спеку S-RES-*).
+
+---
+
+## 2. Иерархия ценности информации
+
+Уровни представления: **primary** — ярко/крупно/`--px`; **secondary** — `--px2`, мельче, тусклее; **hidden** — `<details>` закрытый по умолчанию.
+
+### 2.1 Блоки страницы (до результата)
+
+| # | Блок | Ценность | Уровень (цель) | Уровень (сейчас) | Обоснование |
+|---|---|---|---|---|---|
+| P1 | H1 + лид (что делает, ссылка на methodology) | высокая | primary (заголовок), лид — secondary | как сейчас | Единственная ориентация до взаимодействия; methodology-ссылка — доверие |
+| P2 | Табы Text/Code/Image | высокая | primary (инверсия активного таба) | как сейчас | Выбор модальности — первое решение пользователя |
+| P3 | Поле ввода / dropzone | высокая | primary | как сейчас | Основное действие |
+| P4 | Счётчик слов/строк + подсказка гейта | высокая | secondary (текущий счёт) + **primary-подсветка при нарушении гейта** (жирный `--px`, префикс «Too short») | secondary всегда | Это единственное место, где пользователь узнаёт, почему CTA неактивна; сейчас причина легко пропускается |
+| P5 | Блок ориентации первого визита («How to get a reliable verdict») | высокая (первый визит) / низкая (потом) | secondary, сворачивается после первого результата | **отсутствует** | Сейчас минимумы существуют только в placeholder, который исчезает при вводе |
+| P6 | CTA «Run detection» + подпись о приватности/лимите | высокая (CTA), средняя (подпись) | CTA primary; подпись secondary | как сейчас | Подпись про 30 checks/hour и «файл не уходит без нужды» снижает тревогу, но не primary |
+| P7 | Ошибки ввода (файл, сеть, 429) | высокая в моменте | primary (карточка с `role="alert"` + CTA) | primary, но сырой текст без CTA | См. S-NETWORK-ERR/S-RATE-LIMIT |
+| P8 | How it works (4 аккордеона) | низкая в моменте, средняя для доверия | hidden (аккордеоны закрыты) | как сейчас | Правильно скрыто; оставить |
+| P9 | Honest limits (список) | средняя | hidden (свернуть в аккордеон «Honest limits») | **secondary развёрнуто** | Сейчас 4 пункта занимают постоянное место на экране — это справка, а не действие |
+| P10 | «Tool / 01» кикер | низкая | secondary | как сейчас | Декор бренда |
+
+### 2.2 Блоки результата
+
+| # | Блок | Ценность | Уровень (цель) | Уровень (сейчас) | Обоснование |
+|---|---|---|---|---|---|
+| R1 | Статус-бейдж вердикта | высокая | primary (solid только для confident-зон и provenance_signed; likely-зоны — outline `default`) | как сейчас | Инверсия solid/outline кодирует силу вердикта без цвета |
+| R2 | Цифра вероятности + «AI probability» | высокая | primary | как сейчас | Второй элемент 3-секундного правила |
+| R3 | Предложение-интерпретация «что это значит» + «что делать» (1–2 строки, генерируется из статуса) | высокая | primary (обычный текст `--px`, text-base) | **отсутствует** | Сейчас между цифрой и действием пользователя — пропасть; это главное изменение |
+| R4 | CI-бар | средняя | secondary (бар есть; подписи осей заменить) | почти primary | «0% human / 100% AI» читается как «0% этот текст человеческий» — переименовать (S-RES-*) |
+| R5 | Миниатюра + имя/размер картинки | средняя (привязка вердикта к файлу) | secondary, **под вердиктом, не над ним** | **secondary над вердиктом** | Сейчас превью отодвигает вердикт вниз — нарушение правила 3 секунд на мобильном |
+| R6 | Спаны с подсветкой | высокая для text/code (это «почему» вердикта) | secondary-развёрнутый блок (не под спойлером), заголовок + легенда | как сейчас | Единственное объяснимое доказательство — должно быть видно без клика |
+| R7 | Атрибуция семейств (top-3) | низкая (experimental, только EN, family ≠ model) | **hidden** («Model-family guess (experimental)») | **secondary развёрнуто, выше спанов** | Главная текущая ошибка иерархии: эксперимент занимает место выше доказательства |
+| R8 | Notes (решения гейтов, «borderline → Sapling») | средняя/разная | топ-1 нота → в R3-интерпретацию; остальные → hidden «Why this verdict» | secondary-развёрнутый список | Сейчас все ноты равнозначны; пользователь читает техноболтовню |
+| R9 | Layer states (4 слоя × state+detail) | низкая (диагностика) | hidden «Signals & technical details» | как сейчас | Правильно; исключение — S-NO-ML, где факт недоступности ML выносится в primary-уведомление |
+| R10 | Дисклеймер | высокая (юридически/этически) | secondary, но **всегда виден** (не под спойлером), одна строка shortDisclaimer + ссылка «full disclaimer» раскрывает полный | полный дисклеймер secondary | Полные 4 строки — стена текста; короткая версия читается |
+| R11 | Метаданные C2PA (validation state, claim generator) | низкая | hidden «Manifest details» | как сейчас | Правильно скрыто |
+| R12 | «Verified locally — файл не загружался» (C2PA-ветка) | высокая (приватность + доверие) | secondary, **вынести из hidden в видимую строку под вердиктом** | hidden внутри Manifest details | Это главный аргумент доверия локального вердикта — прятать нельзя |
+| R13 | Подсказки dropzone (C2PA none/unavailable) | средняя | secondary inline в dropzone | как сейчас | Корректно; перефразировать (S-IMG-*) |
+| R14 | Сырой outcome.detail сетевых/zod-ошибок | низкая/вредная | не показывать; в hidden «Error detail» для отладки | **primary alert с сырым текстом** | «Request failed (HTTP 400)» и zod-строки не должны быть лицом ошибки |
+
+### 2.3 Свод текущих перекосов (исправить в первую очередь)
+
+1. **R7 атрибуция** развёрнута и стоит выше спанов → hidden. 
+2. **R3 интерпретация/следующий шаг** отсутствует → добавить primary-блок.
+3. **R5 превью** стоит выше вердикта → перенести под R1–R4.
+4. **R9 в S-NO-ML**: недоступность ML похоронена в закрытом `<details>` → primary-уведомление.
+5. **P9 Honest limits** всегда развёрнут → аккордеон.
+6. **R14 сырые ошибки** в alert → человекочитаемая карточка + Retry.
+7. **R12 «verified locally»** спрятано → видимая строка.
+
+---
+
+## 3. Спеки экранов/состояний
+
+Формат каждой спеки: **Компоновка** (порядок блоков сверху вниз с уровнем) → **Микрокопия EN** (точные строки; переменные в `{фигурных}`) → **a11y** → **Мобильный 360px**. Строки, отмеченные `(copy.json)`, выносятся в `data/detector/copy.json` — в код не зашивать. Существующие строки из copy.json (`statusLabels`, `disclaimer`, `shortDisclaimer`, `layerLabels`, `howItWorks`, `honestLimits`) сохраняются; новые ключи помечены `(new)`.
+
+### 3.0 Общая анатомия карточки результата (все S-RES-*, S-EXT-ONLY, S-RES-BORDERLINE-EXT)
+
+**Компоновка** (изменения против текущего кода помечены ←):
+
+1. `[primary]` Вердикт-строка: бейдж статуса + цифра вероятности с подписью. Без изменений по составу; порядок «бейдж слева, цифра следом».
+2. `[primary]` **Интерпретация + действие** — 1–2 предложения `text-base leading-7` + 1 строка действия `text-sm` с префиксом `→`. ← новое
+3. `[secondary]` CI-бар (новые подписи осей). ← изменение микрокопии
+4. `[secondary]` Миниатюра изображения (только image-ветка). ← перенесена с верха карточки сюда
+5. `[secondary-развёрнутый]` Спаны (только text/code, если `spans.length > 0`).
+6. `[secondary]` Видимая 1-строчная нота, если сервер прислал note уровня «действие» (borderline/Sapling, truncation, English-only attribution). ← сейчас все ноты списком
+7. `[secondary]` Дисклеймер: `shortDisclaimer` + disclosure-ссылка «Full disclaimer».
+8. `[hidden]` «Why this verdict» — остальные `notes`. ← новое
+9. `[hidden]` «Model-family guess (experimental)» — атрибуция. ← понижено
+10. `[hidden]` «Signals & technical details» — layer states. (как сейчас)
+
+Обоснование порядка: 1–3 отвечают на «что/насколько/что делать» за 3 секунды; 5 — доказательство; 8–10 — аудит для сомневающихся.
+
+**Микрокопия интерпретаций по статусам** `(new, copy.json → interpretationByStatus)`:
+
+- `confident_ai`: «Both the score and its confidence interval sit in the high-AI zone. This is a strong statistical signal, not proof.» Действие: `→ Check the highlighted segments below — they show what drove the score.`
+- `likely_ai`: «The score leans AI, but the confidence interval is wide. Treat this as a hint, not a verdict.» Действие: `→ Look at the highlighted segments; mixed highlighting usually means mixed origin.`
+- `insufficient_data` (abstention): «The score falls in the zone where detectors are unreliable, so we refuse to pick a side.» Действие: `→ Send a longer sample, or the same text before/after editing, to get out of the grey zone.`
+- `likely_human`: «The score leans human, within a wide interval. A paraphrased or edited AI text can land here too.» Действие: `→ If authorship matters, ask for drafts or edit history — no detector can prove authorship.`
+- `confident_human`: «Strong statistical signal of human writing.» Действие: `→ Still not proof of authorship — see honest limits below.`
+- (provenance_signed живёт в C2PA-ветке, спеки 3.7–3.9.)
+
+**CI-бар подписи** `(изменение существующих строк)`: левая ось `← human-like`, правая `AI-like →`; центр: `90% CI {lo}–{hi}%` или `CI unavailable`. Обоснование: «0% human» читалось как оценка «этот текст — 0% человеческий».
+
+**a11y карточки:** `<section aria-live="polite" aria-label="Detection result">`; появление результата → фокус на заголовок вердикта (`tabIndex={-1}`, `focus()` в effect по `phase==="done"`), чтобы screen-reader и клавиатура начали с ответа; `aria-label` CI-бара сохранить. Все `<details>/<summary>`: `min-h-11`, видимый фокус `focus-visible:ring-1 ring-ink`.
+
+**Мобильный 360px:** блоки 1–3 — первый экран после скролла; миниатюра (4) под баром, не выше; цифра вероятности не сжимается; спаны — горизонтальный скролл запрещён (`whitespace-pre-wrap`, как сейчас).
+
+---
+
+### 3.1 S-EMPTY-FIRST — первый визит, пусто
+
+**Компоновка:** P1 H1+лид → P2 табы → P3 поле ввода → P5 блок ориентации (новый) → P4 счётчик (ноль, тускло) → P6 CTA disabled + подпись → P8 How it works → P9 Honest limits (свёрнут).
+
+**P5 «How to get a reliable verdict»** `[secondary]`, рамка `border border-line p-4`, три строки `text-sm text-ink2` `(new, copy.json → firstVisitHints)`:
+- Text: `Paste 150+ words of continuous prose — the more, the tighter the confidence interval.`
+- Code: `Paste 40+ non-empty lines of one file, not a diff or a snippet.`
+- Image: `Upload the original file, not a screenshot or a messenger re-save — they strip the metadata we read.`
+- (Показывать только строку активного таба.)
+
+Обоснование: placeholder исчезает при вводе; причины гейтов должны быть видны до него.
+
+**Микрокопия:** placeholder'ы сохранить (`Paste at least 150 words…`), они дублируют гейт внутри поля. Пустой счётчик: `0 words` (без «need 150+» при нуле — не пугать до ввода).
+
+**a11y:** табы — `role="tablist"`, `aria-selected`, стрелки ←/→ переключают табы (roving tabindex); CTA disabled имеет `aria-disabled="true"` и `title`/`aria-describedby` → id счётчика (причина недоступности озвучивается).
+
+**Мобильный:** ориентация — после поля, до CTA; три строки не схлопывать.
+
+### 3.2 S-EMPTY-RETURN — возвращающийся, пусто
+
+Как 3.1, но P5 заменён строкой `[secondary]`: `First time? How to get a reliable verdict` — ссылка, открывающая `<details>` с теми же тремя строками. Обоснование: повторному пользователю ориентация — шум над CTA.
+
+### 3.3 S-GATE-SHORT-TEXT / S-GATE-SHORT-CODE — ниже минимума
+
+Триггер: `0 < words < 150` (текст) / `0 < lines < 40` (код). **Клиентский гейт**: кнопка disabled, запрос не уходит (сейчас уходит и сервер возвращает 200+insufficient_data — растрата rate-limit и обман ожидания; клиентский гейт добавить, серверный оставить как защиту).
+
+**Компоновка:** как S-EMPTY-*, но P4 счётчик становится primary-подсветкой в рамках монохрома: `font-mono text-[11px] font-bold text-ink` (не `--px2`), префикс-метка. CTA disabled + рядом строка-причина.
+
+**Микрокопия** `(изменение существующих)`:
+- Счётчик текст: `Too short — {words} of 150 words minimum`
+- Счётчик код: `Too short — {lines} of 40 non-empty lines minimum`
+- Строка у CTA: `Short inputs are refused on purpose: below the minimum every known detector is noise. See “Honest limits”.` (ссылка скроллит к аккордеону P9)
+
+**a11y:** счётчик `aria-live="polite"` (обновления озвучиваются раз в паузу ввода, не на каждую букву — дебаунс 500мс допустим); disabled-кнопка `aria-describedby` → счётчик.
+
+**Мобильный:** строка-причина переносится под CTA, обе видны без скролла.
+
+### 3.4 S-GATE-LONG-TEXT / S-GATE-LONG-CODE — выше максимума
+
+Триггер: `words > 20000` / `chars > 50000`. Клиентский гейт, как 3.3.
+
+**Микрокопия** `(new)`:
+- Текст: `Over the limit — {words} words, maximum 20,000. Keep the most representative chapters and re-run.`
+- Код: `Over the limit — {chars} characters, maximum 50,000. Paste a single file, not the whole repo.`
+
+Обоснование: сообщение учит, *что именно* обрезать, а не просто «много».
+
+### 3.5 S-RATE-LIMIT — HTTP 429
+
+Сейчас: сырой alert «Too many checks. Try again later.» без таймера. Цель: карточка в потоке (не вместо ввода; ввод сохраняется).
+
+**Компоновка:** поле ввода остаётся заполненным → `[primary]` карточка ошибки `border-[1.5px] border-ink p-4` → How it works.
+
+**Микрокопия карточки** `(new)`:
+- Заголовок: `Rate limit reached`
+- Тело: `30 checks per hour per visitor. Your input is still in the form — come back when the timer runs out.`
+- Таймер (моноширинный, из заголовка `Retry-After`): `Try again in {mm} min`
+- Для image-таба доп. строка: `C2PA signature checks run in your browser and do not count against the limit — you can still verify signed files.`
+- CTA: secondary-кнопка `Retry now` (disabled до конца таймера).
+
+**a11y:** `role="alert"`; таймер `aria-live="off"` (не озвучивать каждую минуту), обновление текста раз в минуту; фокус на заголовок карточки.
+
+**Мобильный:** карточка на всю ширину, таймер не схлопывается.
+
+### 3.6 S-NETWORK-ERR — сеть/5xx/невалидный JSON
+
+Сейчас: `(e as Error).message` или zod-строки в alert. Цель: человекочитаемая карточка + сохранённый вход + Retry.
+
+**Компоновка и микрокопия** `(new)`:
+- Заголовок: `Check failed`
+- Тело по типу:
+  - fetch throw / TypeError: `No connection to the server. Your text is safe in the form — retry when you're back online.`
+  - 5xx: `The detection service returned an error (HTTP {status}). This is on our side; retry in a moment.`
+  - 400: `The server rejected the input: {первая zod-issue, маппленная на человекочитаемую строку}.` (маппинг: `imageBase64…` → `the image could not be read — try re-saving it as PNG or JPEG`).
+- CTA `[primary]` `Retry` (те же данные, без ручного ввода) + `[secondary]` ссылка `Technical detail` раскрывает hidden с сырым `error.message` (для баг-репортов).
+
+**a11y:** `role="alert"`, фокус на заголовок; Retry — обычная кнопка 44px.
+
+### 3.7 S-RES-CONF-AI / LIKELY-AI / ABSTAIN / LIKELY-HUMAN / CONF-HUMAN — пять зон
+
+Все используют анатомию 3.0. Различия:
+
+| Статус | Бейдж | Интерпретация (3.0) | Особое |
+|---|---|---|---|
+| confident_ai | solid | см. 3.0 | — |
+| likely_ai | outline | см. 3.0 | — |
+| insufficient_data (abstention) | secondary | см. 3.0 + расширенное действие (ниже) | CI-бар показывается, если p есть; цифра p показывается всегда, когда не null — честность важнее простоты |
+| likely_human | outline | см. 3.0 | — |
+| confident_human | solid | см. 3.0 | — |
+
+**S-RES-ABSTAIN — тупик → обучение.** Действие-строка заменяется блоком `[secondary]` «How to get a verdict» (3 строки, `(new)`):
+- `Send a longer sample — 400+ words move most texts out of the grey zone.`
+- `Send an earlier or later version of the same text — edited and raw versions rarely sit in the grey zone together.`
+- `For images, send the original file with metadata intact (see the Image tab).`
+Обоснование: abstention — самый частый «разочаровывающий» исход; превращаем его в инструкцию, а не отказ.
+
+**Нота про не-английский** (когда `attribution` skipped по языку): видимая строка `[secondary]` под CI-баром: `Model-family guess is English-only and was skipped for this text. The verdict itself is language-independent.` `(new)`
+
+### 3.8 S-RES-BORDERLINE-EXT — граничный + второе мнение
+
+Анатомия 3.0 + видимая нота `[secondary]`: `Borderline score — an independent external detector (Sapling) was consulted and the confidence interval was widened to cover both opinions.` `(из строки route.ts, переписана: «included» → объяснение, что CI честно расширен)`
+Обоснование: пользователь должен понимать, почему интервал шире, а не «точнее».
+
+### 3.9 S-EXT-ONLY — вердикт по одному внешнему сигналу
+
+Анатомия 3.0, но под бейджем обязательная строка `[secondary]`: `Based on a single external signal — our own scoring layer is not configured on this deployment. Treat with extra caution.` `(new)`
+Спаны отсутствуют (внешний API их не даёт) — блок 5 не рендерится, вместо него ничего (не показывать пустой контейнер).
+Обоснование: один сигнал без объяснимости — честно сказать об этом в лицо.
+
+### 3.10 S-NO-ML — ML-слои недоступны (нет ключей / провайдер упал, внешних нет)
+
+Текущее поведение: вердикт `insufficient_data`, причина спрятана в закрытом `<details>` + строка «No numeric score — see below which signals ran». Это худший случай честности: пользователь думает, что его текст «неопределённый», хотя детектор просто выключен.
+
+**Компоновка** (отдельная карточка, не анатомия 3.0):
+1. `[primary]` Бейдж `secondary`-варианта: `Detection unavailable` (НЕ «Insufficient data» — разные вещи: abstention ≠ выключенный прибор). `(new statusLabel-ключ UI-уровня, серверный enum не меняется: маппинг `probability===null && zeroshot.state!=="ok"` → этот бейдж)`
+2. `[primary]` Текст: `Our scoring layer is not available on this deployment (no ML provider configured), so no verdict can be produced — for any input. This is a limitation of this server, not a property of your text.` `(new)`
+3. `[secondary]` Что работает: `Image provenance checks (C2PA) run locally in your browser and still work — switch to the Image tab if you have a file to verify.`
+4. `[secondary]` Действие: `→ Nothing to retry on your side. Check /methodology for what the full pipeline looks like when configured.`
+5. `[hidden]` «Signals & technical details» — layer states с detail-строками (`No LLM provider key configured…`).
+6. `[secondary]` Дисклеймер — не показывать (вердикта нет, дисклеймер о вердиктах бессмыслен; вместо него строка 2).
+
+**a11y/мобильный:** как карточка результата; фокус на бейдж.
+
+### 3.11 S-IMG-C2PA-LOADING — чтение подписи
+
+**Компоновка:** dropzone с именем файла + строка статуса; CTA disabled с лейблом `Reading signature…` (уже есть — сохранить).
+
+**Микрокопия** (замена текущей строки в dropzone): `Checking the C2PA signature locally in your browser — first load fetches the verification library ({~11 MB}), the file itself is not uploaded.` `(new)`
+**a11y:** строка статуса `aria-live="polite"`; если >8 секунд (слабый канал) — дописать `Still loading — slow connection? You can skip and run the server check instead.` + secondary-кнопка `Skip signature check` (устанавливает `c2pa=none`-эквивалент и разблокирует CTA). Обоснование: WASM на 3G — единственное место, где пользователь может «зависнуть» без выхода.
+
+### 3.12 S-IMG-C2PA-AI — valid + AI claim (API не вызывается)
+
+**Компоновка** (это «результат с картинкой+миниатюрой», особая тщательность):
+1. `[primary]` Бейдж solid `Signed: AI-generated (C2PA)` + строка-факт: `Cryptographically signed as AI-generated{ by {generator}}. Verified locally — this file was never uploaded.`
+2. `[secondary]` Миниатюра 96/128px + имя + размер + размеры. ← перенесена под вердикт (сейчас над ним)
+3. `[secondary]` Действие: `→ No further check needed — a valid signature outranks any statistical detector.`
+4. `[hidden]` `Manifest details`: validation state, claim generator (как сейчас).
+5. `[secondary]` shortDisclaimer — заменить на: `A signature proves what the signer declared, not ground truth — see “Honest limits”.` `(new; дисклеймер про false positives к криптоподписи не относится)`
+
+**Микрокопия подписи к миниатюре:** имя файла `font-mono text-xs font-bold break-all`, мета-строка `{8.2 MB · 1024 × 1024 px}` `text-ink2` (как сейчас).
+**a11y:** `aria-live="polite"` на секции, фокус на бейдж; `alt` миниатюры `Uploaded file: {name}`.
+**Мобильный:** вердикт + факт — первый экран; миниатюра ниже; 96px.
+
+### 3.13 S-IMG-C2PA-NOAI — valid, без AI claim
+
+Как 3.12, но:
+1. Бейдж solid `Signed — no AI claim`; факт: `Valid C2PA signature{ by {generator}}. The signer declares no AI involvement (e.g. a camera-signed photo). Verified locally — not uploaded.`
+2. Действие: `→ Provenance is verified; what the content is, the signer already declared. Nothing more to check here.`
+3. Дополнительная secondary-строка (против главного misread): `This does not prove the content is human-made — it proves the manifest says so.`
+
+### 3.14 S-IMG-C2PA-INVALID — подпись битая
+
+**Компоновка:**
+1. `[primary]` Бейдж solid `Invalid signature`
+2. `[primary]` Факт: `A C2PA manifest is embedded, but its signature is invalid — the file or its metadata was modified after signing. The manifest's claims cannot be trusted.`
+3. `[secondary]` Против паники: `Invalid ≠ AI-generated: re-saving in an editor breaks signatures too.`
+4. `[primary CTA]` `Check anyway (statistical)` — отправляет файл на /api/detect (пропускает локальный вердикт). Рядом secondary-подпись: `Statistical checks do not rely on the broken manifest.`
+5. `[secondary]` Миниатюра.
+6. `[hidden]` Manifest details + shortDisclaimer.
+
+Обоснование CTA: сейчас пользователь с invalid-подписью остаётся в тупике (вердикт показан, но кнопка «Run detection» выше по странице и её связь неочевидна); явный CTA в карточке закрывает сценарий.
+
+### 3.15 S-IMG-TOO-BIG — файл > 8 MB
+
+Сейчас: превью устанавливается ДО проверки размера (баг: показывается превью отклонённого файла). Цель: превью не создавать, если размер превышен (проверка до `setPreviewFile`).
+
+**Микрокопия** (alert у dropzone, `border border-ink px-4 py-3`, как сейчас по стилю): `This file is {9.4 MB} — the limit is 8 MB. Re-export or compress the image (any PNG/JPEG under 8 MB keeps enough metadata for the checks).` `(new)`
+**Поведение:** файл сбрасывается, dropzone возвращается к пустому виду, фокус — на alert.
+**a11y:** `role="alert"`.
+
+### 3.16 S-IMG-BAD-FORMAT — неподдержанный/битый файл
+
+Триггеры: расширение вне accept, `fileToBase64` reject, серверный `format=unknown`.
+**Микрокопия** `(new)`:
+- Неподдержанный тип: `Unsupported format — PNG or JPEG only. WebP and GIF carry no metadata we can verify; convert the image to PNG first.`
+- Битый файл: `The file could not be read as an image. Try re-saving it as PNG or JPEG.`
+
+(Синхронизация: сейчас `accept` включает webp/gif, а UI-подпись говорит «PNG or JPEG» — противоречие. Решение: **сузить accept до `image/png,image/jpeg`** и оставить подпись `PNG or JPEG, up to 8 MB`. Обоснование: для webp/gif сервер делает только поверхностный скан — лучше честный отказ на входе, чем мусорный вердикт.)
+
+### 3.17 S-IMG-NO-SIGNALS — нет метаданных, внешний детектор не настроен
+
+Отдельная карточка (как 3.10, но про картинку):
+1. `[primary]` Бейдж secondary `Insufficient data`
+2. `[primary]` Текст: `This image carries no provenance metadata, and the external image detector is not configured on this deployment — there is nothing reliable to score.`
+3. `[primary]` Против главного misread (жирным не делать, но в primary-блоке): `Absence of metadata is not evidence of human origin — metadata is trivially stripped by re-saving.`
+4. `[secondary]` Действие-блок «How to get a verdict for an image» `(new)`:
+   - `Send the original file straight from the generator or camera — not a screenshot or a messenger re-save.`
+   - `If the image came from a C2PA-signing tool (Firefly, DALL·E, some cameras), the original will verify locally in your browser.`
+5. `[hidden]` Signals & technical details (provenance ok/0 signals; external unavailable с detail).
+6. Дисклеймер — не показывать (нет вердикта).
+
+### 3.18 S-RES-STALE-GUARD — вход изменился после результата
+
+Поведение сохранить (reset результата при onChange), добавить один нюанс: при правке текста карточка результата удаляется из DOM, и фокус возвращается в textarea (`focus({preventScroll:true})`), чтобы screen-reader не остался на мёртвой `aria-live`-секции. Обоснование: иначе SR-пользователь не узнает, что вердикт аннулирован.
+
+### 3.19 S-SPANS-INTERACTION — hover/tap UX подсветки спанов
+
+Текущее: `title`-атрибут на `<span>` — недоступен на таче, с клавиатуры и для SR. Цель:
+
+- Каждый спан — `<button type="button">` с `class="cursor-help"` → заменить на реальную кнопку-спан (inline, `text-left`, фон как сейчас `rgb(27 27 22 / α)`), `aria-label="Segment scored {x}% AI-like"`. Обоснование: кнопка фокусируется, кликается, озвучивается.
+- **Десктоп hover:** tooltip не нужен — вместо него фиксированная строка-шкала под блоком: `Hovered segment: {x}% AI-like` (`aria-live="polite"`), обновляется по `onMouseEnter`/`onFocus`.
+- **Тап/клик/Enter:** «прилипает» — спан получает рамку `outline outline-1 outline-ink`, строка-шкала фиксирует значение до следующего тапа; повторный тап по тому же спану снимает выбор.
+- **Легенда** `[secondary]`, всегда видима над текстом: `Darker shading = more AI-like · tap or hover a segment for its score` `(изменение текущего заголовка; «hover» → «tap or hover»)`.
+- **Заголовок блока:** `Segment analysis` + secondary-подзаголовок `Per-sentence scores from the zero-shot layer — this is the evidence behind the verdict, not per-sentence verdicts.` `(new; против misread «это предложение — точно AI»)`.
+- Контейнер: `max-h-72 overflow-y-auto` сохранить; `tabIndex={0}` + `aria-label="Scrollable analysed text"`, чтобы клавиатурник мог скроллить.
+- **Мобильный:** шаг альфы увеличить: `0.12 + score*0.35` (на маленьком экране 8% wash нечитаем); min размер тача неприменим к inline-спанам (предложения длиннее 44px практически всегда) — исключение осознанное, компенсируется строкой-шкалой (не нужно попадать точно, чтобы понять картину).
+
+### 3.20 Прогресс сабмита (S-SUBMITTING, общий для B/C/D5)
+
+- CTA: `Checking…` + `aria-busy="true"` на карточке-контейнере. Сохранить.
+- Добавить: при >6 секунд под CTA появляется secondary-строка `Scoring {n} tokens under two models — long inputs take up to ~20 s.` `(new)`. Обоснование: DeepInfra echo-logprobs на 24K chars — самое долгое состояние системы; без объяснения выглядит как зависание.
+- Двойной сабмит запрещён (`disabled` по phase — уже есть).
+
+---
+
+## 4. Изменения данных и контрактов (для кодера, без кода)
+
+1. `data/detector/copy.json`: добавить ключи `interpretationByStatus` (6 строк), `firstVisitHints` (3), `verdictActions` (строки `→ …`), `noMl` (блок 3.10), `imgNoSignals` (3.17), `rateLimit` (3.5), `errors` (3.6), `spanHints` (3.19), `c2paInvalidNote`, `c2paNoAiNote`. Все новые строки — там, не в коде.
+2. `accept` file input: `image/png,image/jpeg` (см. 3.16).
+3. Порядок блоков в `DetectionResultView` и `C2paVerdict`: превью под вердикт (3.0/3.12).
+4. Клиентские гейты min/max для text/code до submit (3.3/3.4); серверные гейты не трогать.
+5. `S-NO-ML` маппинг: `probability===null && layers.zeroshot.state !== "ok" && layers.external.state !== "ok"` → карточка «Detection unavailable» вместо «Insufficient data» (UI-уровень, enum статусов API не меняется).
+6. `ImagePreview` рендерить после CTA-блока в обеих карточках; превью не создавать при oversize (3.15).
+7. Ошибка 429: читать `Retry-After` из ответа и отображать таймер (3.5).
+8. Спаны: `<span title>` → `<button aria-label>` + живая строка-шкала (3.19).
+9. Атрибуция: обернуть в `<details>` (hidden) с summary `Model-family guess (experimental)`; внутри сохранить существующую разметку + строку `Family-level guess, English only — not an identification of a specific model.`
+10. Honest limits: обернуть в `<details>` (hidden), summary `Honest limits`.
+11. localStorage `aidetector.visited` (1.3).
+12. Дисклеймер в результатах: `shortDisclaimer` + `<details>` «Full disclaimer» с полным текстом.
+
+## 5. Риски и открытые вопросы (проверить до/во время реализации)
+
+- **Калибровка не подтверждена** (`SMOKE-TEST TODO` в zeroshot.ts: midpoint/scale надо переобучить). UX спроектирован так, что зоны и CI важнее точного числа — это согласовано; но копирайт «calibrated» на странице остаётся честным только после калибровки. Не блокер UX, блокер обещаний в мета-описании страницы.
+- **Rate-limit per warm instance** (rate-limit.ts): таймер Retry-After может быть неточным на serverless. Копирайт 3.5 намеренно не обещает точности («per visitor»), таймер — лучшая доступная оценка.
+- **Sapling для текста вызывается только при borderline/отсутствии zeroshot** (route.ts): S-EXT-ONLY для текста возможен; для кода external всегда skipped — граничные кодовые вердикты чаще падают в abstention. Копирайт 3.7 abstention-блока это покрывает.
+- **C2PA WASM ~11 MB**: на мобильном 3G загрузка может превышать терпение пользователя — Skip-кнопка (3.11) обязательна, не опциональна.
+- **Открытый вопрос владельцу:** сужение accept до PNG/JPEG (3.16) — продуктовое решение; альтернатива — оставить webp/gif с предупреждением «limited analysis». В спеке выбран честный отказ.
+- **Открытый вопрос:** показывать ли цифру p при abstention (в спеке — да, честность > простота). Если владелец против — скрывать цифру и бар, оставляя интерпретацию; остальная компоновка не меняется.

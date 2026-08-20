@@ -37,7 +37,7 @@ const STATUS_VARIANT: Record<DetectionStatus, "solid" | "default" | "secondary">
 type Phase = "idle" | "c2pa" | "posting" | "done" | "error";
 
 /** Structured submit failure — drives the error cards (S-RATE-LIMIT / S-NETWORK-ERR). */
-type SubmitError =
+export type SubmitError =
   | { kind: "rate-limit"; detail: string; retryAfterSeconds: number }
   | { kind: "network"; detail: string }
   | { kind: "http"; status: number; detail: string };
@@ -50,7 +50,7 @@ export interface ImagePreviewState {
   bytes: number;
 }
 
-type Gate = "empty" | "short" | "long" | "ok";
+export type Gate = "empty" | "short" | "long" | "ok";
 
 const VISITED_KEY = "aidetector.visited";
 
@@ -400,16 +400,7 @@ export function AiDetector({ initialKind, copy, thresholds }: Props) {
       ) : null}
 
       {/* File-level input errors (oversize / bad format / unreadable) */}
-      {fileError ? (
-        <p
-          ref={fileErrorRef}
-          tabIndex={-1}
-          role="alert"
-          className="border border-ink px-4 py-3 text-sm font-medium focus:outline-none focus-visible:ring-1 focus-visible:ring-ink"
-        >
-          {fileError}
-        </p>
-      ) : null}
+      {fileError ? <FileErrorAlert message={fileError} alertRef={fileErrorRef} /> : null}
 
       {/* P7 — structured error cards (spec 3.5/3.6); the input above stays filled */}
       {submitError?.kind === "rate-limit" ? (
@@ -471,7 +462,7 @@ export function AiDetector({ initialKind, copy, thresholds }: Props) {
 
 // --- first-visit orientation ----------------------------------------------------
 
-function FirstVisitHints({
+export function FirstVisitHints({
   copy,
   kind,
   visited,
@@ -508,7 +499,7 @@ function FirstVisitHints({
 
 // --- gate counter (P4) ------------------------------------------------------------
 
-function GateCounter({
+export function GateCounter({
   kind,
   gate,
   words,
@@ -575,7 +566,7 @@ function GateCounter({
 }
 
 /** Reason line next to the disabled CTA for short inputs (spec 3.3). */
-function GateReason({ copy }: { copy: DetectorCopy }) {
+export function GateReason({ copy }: { copy: DetectorCopy }) {
   const [before, after] = copy.gates.shortReason.split("“Honest limits”");
   return (
     <span className="text-[11px] leading-5 text-ink2">
@@ -588,9 +579,29 @@ function GateReason({ copy }: { copy: DetectorCopy }) {
   );
 }
 
+/** File-level input error (S-IMG-TOO-BIG / S-IMG-BAD-FORMAT): alert at the dropzone. */
+export function FileErrorAlert({
+  message,
+  alertRef,
+}: {
+  message: string;
+  alertRef?: React.Ref<HTMLParagraphElement>;
+}) {
+  return (
+    <p
+      ref={alertRef}
+      tabIndex={-1}
+      role="alert"
+      className="border border-ink px-4 py-3 text-sm font-medium focus:outline-none focus-visible:ring-1 focus-visible:ring-ink"
+    >
+      {message}
+    </p>
+  );
+}
+
 // --- image input --------------------------------------------------------------
 
-function ImageInput({
+export function ImageInput({
   file,
   dragOver,
   setDragOver,
@@ -682,7 +693,7 @@ function formatBytes(bytes: number): string {
 }
 
 /** Thumbnail + file facts of the uploaded image. Dimensions are read once the image loads. */
-function ImagePreview({ preview }: { preview: ImagePreviewState }) {
+export function ImagePreview({ preview }: { preview: ImagePreviewState }) {
   const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   // The image may already be cached/complete before React attaches onLoad.
@@ -733,7 +744,7 @@ function TechnicalDetails({ label, children }: { label: string; children: React.
 // --- error cards (S-RATE-LIMIT / S-NETWORK-ERR) ----------------------------------
 
 /** HTTP 429 card with a Retry-After countdown; the input stays filled above. */
-function RateLimitCard({
+export function RateLimitCard({
   error,
   copy,
   isImage,
@@ -792,7 +803,7 @@ function humanReason(detail: string, copy: DetectorCopy): string {
 }
 
 /** Network / 5xx / 400 card: readable message, Retry, raw detail hidden for bug reports. */
-function ErrorCard({
+export function ErrorCard({
   error,
   copy,
   onRetry,
