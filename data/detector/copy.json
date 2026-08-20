@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "updatedAt": "2026-08-20",
+  "note": "User-facing copy for the AI content detector (English). Kept in data/ so wording changes do not require code edits.",
+  "disclaimer": "This is a probabilistic signal, not proof. AI detectors produce false positives — especially on short texts, non-native English writing, and heavily edited AI output. Never use this result as the sole basis for accusations, grading, moderation, or legal decisions.",
+  "shortDisclaimer": "Probabilistic signal, not proof. False positives happen — do not use as the sole basis for decisions.",
+  "statusLabels": {
+    "confident_ai": "Confident: AI-generated",
+    "likely_ai": "Likely AI-generated",
+    "insufficient_data": "Insufficient data",
+    "likely_human": "Likely human-written",
+    "confident_human": "Confident: human-written",
+    "provenance_signed": "Signed: AI-generated (C2PA)"
+  },
+  "layerLabels": {
+    "provenance": "Provenance & metadata",
+    "zeroshot": "Zero-shot perplexity (Binoculars-style)",
+    "attribution": "Model-family attribution",
+    "external": "External second opinion"
+  },
+  "howItWorks": [
+    {
+      "title": "Provenance & metadata",
+      "body": "For images we first look for cryptographic provenance (a C2PA content manifest, checked in your browser — the file never leaves your device for this step) and for generator fingerprints in file metadata: PNG text chunks written by Stable Diffusion UIs (A1111 'parameters', ComfyUI workflow), and camera EXIF. A valid C2PA signature is a definitive answer; metadata hints are strong but can be stripped."
+    },
+    {
+      "title": "Zero-shot perplexity scoring",
+      "body": "For text and code we measure how 'surprising' the content is to open language models (a Binoculars-style approximation): AI-generated text is usually more predictable to LLMs than human writing. The score is computed per sentence (or per code line), so you can see which segments look machine-generated, and a bootstrap confidence interval shows how stable the estimate is."
+    },
+    {
+      "title": "Model-family attribution",
+      "body": "When there is enough text, we score it under proxy models for several families (GPT-style, LLaMA, Qwen, Mistral, DeepSeek) and report the most likely source family. This is experimental: families that share training data are easy to confuse, and we say 'unknown' instead of guessing when the margin is small."
+    },
+    {
+      "title": "External second opinion",
+      "body": "Optionally, a commercial detector (Sapling for text, Sightengine for images) is asked for an independent score when configured on the server. It is used as a second vote, never as the only signal."
+    }
+  ],
+  "honestLimits": [
+    "Scores are calibrated zones (confident / likely / abstain), not exact percentages — treat the confidence interval as part of the answer.",
+    "Short inputs are refused on purpose: under 150 words of text or 40 lines of code, every known method is unreliable.",
+    "Human writers — especially non-native English speakers — can be flagged as AI. Edited or paraphrased AI text can pass as human.",
+    "Attribution identifies a model family, not a specific model, and only for English text/code today."
+  ]
+}

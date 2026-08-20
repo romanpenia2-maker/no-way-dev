@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "updatedAt": "2026-08-20",
+  "note": "Detection thresholds for the AI content detector. Two-FPR zone model: scores at or above tauFpr1 map to the confident zone, tauFpr5 to the likely zone (and symmetrically on the human side); the band between the zones is an abstention area. Calibration values (scoreMidpoint/scoreScale) are the sigmoid mapping from the Binoculars-style score to a probability and MUST be re-fit on a domain calibration corpus before trusting the numbers (see docs, v1.5).",
+  "sourceUrl": "https://github.com/romanpenia2-maker/no-way-dev/blob/rc/data/detector/thresholds.json",
+  "text": {
+    "minWords": 150,
+    "maxWords": 20000,
+    "attributionMinWords": 100,
+    "tauFpr1": 0.8,
+    "tauFpr5": 0.55,
+    "scoreMidpoint": 0.95,
+    "scoreScale": 14
+  },
+  "code": {
+    "minLines": 40,
+    "maxChars": 50000,
+    "attributionMinWords": 100,
+    "tauFpr1": 0.8,
+    "tauFpr5": 0.55,
+    "scoreMidpoint": 0.9,
+    "scoreScale": 14
+  },
+  "image": {
+    "maxBytes": 8388608,
+    "tauFpr1": 0.8,
+    "tauFpr5": 0.55
+  },
+  "attribution": {
+    "minMargin": 0.15,
+    "temperature": 0.35,
+    "topK": 3
+  },
+  "bootstrap": {
+    "resamples": 100,
+    "ciLevel": 0.9
+  }
+}

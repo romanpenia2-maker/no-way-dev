@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "updatedAt": "2026-08-20",
+  "experimental": true,
+  "note": "Model-family attribution config (EXPERIMENTAL). Each family is proxied by an open model hosted on DeepInfra; the document perplexity under each proxy is scored and softmax(-logPPL / temperature) gives family probabilities. Proxy ids verified against the DeepInfra model catalog on 2026-08-20. Granularity is the model FAMILY, not a specific version; close versions are known to be confused, so 'unknown' is emitted when the top-1/top-2 margin is below minMargin.",
+  "sourceUrl": "https://github.com/romanpenia2-maker/no-way-dev/blob/rc/data/detector/attribution.json",
+  "provider": "deepinfra",
+  "families": [
+    {
+      "family": "gpt",
+      "label": "GPT-style (OpenAI gpt-oss proxy)",
+      "proxyModel": "openai/gpt-oss-20b"
+    },
+    {
+      "family": "llama",
+      "label": "LLaMA-family (Meta)",
+      "proxyModel": "meta-llama/Meta-Llama-3.1-8B-Instruct"
+    },
+    {
+      "family": "qwen",
+      "label": "Qwen-family (Alibaba)",
+      "proxyModel": "Qwen/Qwen2.5-7B-Instruct"
+    },
+    {
+      "family": "mistral",
+      "label": "Mistral-family",
+      "proxyModel": "mistralai/Mistral-7B-Instruct-v0.3"
+    },
+    {
+      "family": "deepseek",
+      "label": "DeepSeek-family",
+      "proxyModel": "deepseek-ai/DeepSeek-V4-Flash"
+    }
+  ]
+}

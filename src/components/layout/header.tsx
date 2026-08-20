@@ -10,6 +10,7 @@ const nav = [
   { href: "/benchmarks", label: "Benchmarks", match: "/benchmarks" },
   { href: "/compare", label: "Compare", match: "/compare" },
   { href: "/calculators/cost", label: "Calculator", match: "/calculators" },
+  { href: "/ai-detector", label: "Detector", match: "/ai-detector" },
   { href: "/about", label: "About", match: "/about" },
 ];
 

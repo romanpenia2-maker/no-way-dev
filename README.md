@@ -42,6 +42,22 @@ All optional for the current static build (see `.env.example`):
 - `RESEND_API_KEY`, `RESEND_AUDIENCE_ID` — **phase 3**, email-capture form is currently a stub
 - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` — deploy/notification bots (CI secrets)
 - `GITHUB_TOKEN` — local runs of data bots (CI uses the built-in token)
+- **AI detector** (all optional; without them the page still works via client-side C2PA + server metadata heuristics, and each ML layer reports itself as unavailable instead of fabricating scores):
+  - `DEEPINFRA_API_KEY` — zero-shot perplexity scoring + family attribution
+  - `TOGETHER_API_KEY` — fallback LLM provider
+  - `SIGHTENGINE_API_USER` / `SIGHTENGINE_API_SECRET` — external image detector
+  - `SAPLING_API_KEY` — external text detector (borderline cases only)
+
+## AI content detector
+
+`/ai-detector` checks text, code and images for AI origin with calibrated, zone-based verdicts (confident / likely / insufficient data) instead of fake precision:
+
+- **L0 provenance** — C2PA manifest verification runs in the browser (`@contentauth/c2pa-web`, lazy-loaded WASM; a signed file is never uploaded); server-side PNG/JPEG metadata heuristics (A1111 `parameters`, ComfyUI chunks, camera EXIF) via pure-TS byte parsing.
+- **L1 zero-shot** — Binoculars-style perplexity ratio via OpenAI-compatible `completions` echo logprobs (DeepInfra, Together fallback), per-sentence/per-line span scores + bootstrap CI.
+- **L2 attribution** — model-*family* guess (experimental) from perplexity profiles under open proxy models (`data/detector/attribution.json`).
+- **L4 external** — Sightengine (images), Sapling (borderline text), only when keys are configured.
+
+API: `POST /api/detect` (`{kind, text? | imageBase64?}`, zod-validated, in-memory rate limit 30/hour/IP). Thresholds and UI copy live in `data/detector/` (zod-validated). Gates: text ≥150 words, code ≥40 lines, attribution ≥100 words, English-only attribution.
 
 ## Data
 
