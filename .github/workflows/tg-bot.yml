@@ -57,15 +57,19 @@ jobs:
                                        capture_output=True, text=True).stdout or "issues пока нет"
                   reply = "📋 Последние issues:\n" + out
               else:
-                  # создаём issue
+                  # ответ на сообщение бота (reply) → issue с label "answer"; иначе — "idea"
+                  is_answer = m.get("reply_to_message") is not None
+                  label = "answer" if is_answer else "idea"
+                  prefix = "answer" if is_answer else "idea"
                   title = text.split("\n")[0][:80]
-                  body = f"Идея из Telegram:\n\n{text}"
+                  body = f"Из Telegram ({label}):\n\n{text}"
                   r = subprocess.run(["gh", "issue", "create", "--repo", os.environ["REPO"],
-                                      "--title", f"[idea]: {title}", "--body", body,
-                                      "--label", "idea"], capture_output=True, text=True)
+                                      "--title", f"[{prefix}]: {title}", "--body", body,
+                                      "--label", label], capture_output=True, text=True)
                   url = r.stdout.strip()
                   num = url.rstrip("/").split("/")[-1] if "issue" in url else "?"
-                  reply = f"✅ Идея принята → issue #{num}\n{url}\n\nРеализацию и preview пришлю сюда."
+                  kind = "Ответ на решение" if is_answer else "Идея"
+                  reply = f"✅ {kind} принято → issue #{num}\n{url}"
 
               subprocess.run(["curl", "-s", "-X", "POST",
                               f"https://api.telegram.org/bot{os.environ['TG_TOKEN']}/sendMessage",
