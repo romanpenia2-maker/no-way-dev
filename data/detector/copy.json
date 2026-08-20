@@ -1,7 +1,7 @@
 {
-  "version": 1,
+  "version": 2,
   "updatedAt": "2026-08-20",
-  "note": "User-facing copy for the AI content detector (English). Kept in data/ so wording changes do not require code edits.",
+  "note": "User-facing copy for the AI content detector (English). Kept in data/ so wording changes do not require code edits. v2 adds the UX-overhaul keys (interpretations, gates, error cards, span hints, C2PA strings) per docs detector-ux-map.",
   "disclaimer": "This is a probabilistic signal, not proof. AI detectors produce false positives — especially on short texts, non-native English writing, and heavily edited AI output. Never use this result as the sole basis for accusations, grading, moderation, or legal decisions.",
   "shortDisclaimer": "Probabilistic signal, not proof. False positives happen — do not use as the sole basis for decisions.",
   "statusLabels": {
@@ -17,6 +17,109 @@
     "zeroshot": "Zero-shot perplexity (Binoculars-style)",
     "attribution": "Model-family attribution",
     "external": "External second opinion"
+  },
+  "interpretationByStatus": {
+    "confident_ai": "Both the score and its confidence interval sit in the high-AI zone. This is a strong statistical signal, not proof.",
+    "likely_ai": "The score leans AI, but the confidence interval is wide. Treat this as a hint, not a verdict.",
+    "insufficient_data": "The score falls in the zone where detectors are unreliable, so we refuse to pick a side.",
+    "likely_human": "The score leans human, within a wide interval. A paraphrased or edited AI text can land here too.",
+    "confident_human": "Strong statistical signal of human writing."
+  },
+  "verdictActions": {
+    "confident_ai": "→ Check the highlighted segments below — they show what drove the score.",
+    "likely_ai": "→ Look at the highlighted segments; mixed highlighting usually means mixed origin.",
+    "insufficient_data": "→ Send a longer sample, or the same text before/after editing, to get out of the grey zone.",
+    "likely_human": "→ If authorship matters, ask for drafts or edit history — no detector can prove authorship.",
+    "confident_human": "→ Still not proof of authorship — see honest limits below."
+  },
+  "abstainBlock": {
+    "title": "How to get a verdict",
+    "items": [
+      "Send a longer sample — 400+ words move most texts out of the grey zone.",
+      "Send an earlier or later version of the same text — edited and raw versions rarely sit in the grey zone together.",
+      "For images, send the original file with metadata intact (see the Image tab)."
+    ]
+  },
+  "firstVisitHints": {
+    "title": "How to get a reliable verdict",
+    "text": "Paste 150+ words of continuous prose — the more, the tighter the confidence interval.",
+    "code": "Paste 40+ non-empty lines of one file, not a diff or a snippet.",
+    "image": "Upload the original file, not a screenshot or a messenger re-save — they strip the metadata we read.",
+    "returnLink": "First time? How to get a reliable verdict"
+  },
+  "gates": {
+    "tooShortText": "Too short — {words} of {min} words minimum",
+    "tooShortCode": "Too short — {lines} of {min} non-empty lines minimum",
+    "tooLongText": "Over the limit — {words} words, maximum {max}. Keep the most representative chapters and re-run.",
+    "tooLongCode": "Over the limit — {chars} characters, maximum {max}. Paste a single file, not the whole repo.",
+    "shortReason": "Short inputs are refused on purpose: below the minimum every known detector is noise. See “Honest limits”."
+  },
+  "noMl": {
+    "badge": "Detection unavailable",
+    "body": "Our scoring layer is not available on this deployment (no ML provider configured), so no verdict can be produced — for any input. This is a limitation of this server, not a property of your text.",
+    "working": "Image provenance checks (C2PA) run locally in your browser and still work — switch to the Image tab if you have a file to verify.",
+    "action": "→ Nothing to retry on your side. Check /methodology for what the full pipeline looks like when configured."
+  },
+  "imgNoSignals": {
+    "body": "This image carries no provenance metadata, and the external image detector is not configured on this deployment — there is nothing reliable to score.",
+    "misread": "Absence of metadata is not evidence of human origin — metadata is trivially stripped by re-saving.",
+    "hintsTitle": "How to get a verdict for an image",
+    "hints": [
+      "Send the original file straight from the generator or camera — not a screenshot or a messenger re-save.",
+      "If the image came from a C2PA-signing tool (Firefly, DALL·E, some cameras), the original will verify locally in your browser."
+    ]
+  },
+  "rateLimit": {
+    "title": "Rate limit reached",
+    "body": "30 checks per hour per visitor. Your input is still in the form — come back when the timer runs out.",
+    "timer": "Try again in {mm} min",
+    "timerDone": "The window has passed — you can retry now.",
+    "imageNote": "C2PA signature checks run in your browser and do not count against the limit — you can still verify signed files.",
+    "retry": "Retry now"
+  },
+  "errors": {
+    "title": "Check failed",
+    "network": "No connection to the server. Your text is safe in the form — retry when you're back online.",
+    "server": "The detection service returned an error (HTTP {status}). This is on our side; retry in a moment.",
+    "badInput": "The server rejected the input: {reason}.",
+    "badImage": "the image could not be read — try re-saving it as PNG or JPEG",
+    "technicalDetail": "Technical detail"
+  },
+  "spanHints": {
+    "title": "Segment analysis",
+    "subtitle": "Per-sentence scores from the zero-shot layer — this is the evidence behind the verdict, not per-sentence verdicts.",
+    "legend": "Darker shading = more AI-like · tap or hover a segment for its score",
+    "live": "Segment: {x}% AI-like",
+    "ariaLabel": "Segment scored {x}% AI-like"
+  },
+  "borderlineExtNote": "Borderline score — an independent external detector (Sapling) was consulted and the confidence interval was widened to cover both opinions.",
+  "attributionEnglishNote": "Model-family guess is English-only and was skipped for this text. The verdict itself is language-independent.",
+  "attributionFootnote": "Family-level guess, English only — not an identification of a specific model.",
+  "extOnlyNote": "Based on a single external signal — our own scoring layer is not configured on this deployment. Treat with extra caution.",
+  "c2paInvalidNote": "Invalid ≠ AI-generated: re-saving in an editor breaks signatures too.",
+  "c2paNoAiNote": "This does not prove the content is human-made — it proves the manifest says so.",
+  "submitting": {
+    "slow": "Scoring ~{n} tokens under two models — long inputs take up to ~20 s."
+  },
+  "c2pa": {
+    "signedNoAiBadge": "Signed — no AI claim",
+    "signedAiFact": "Cryptographically signed as AI-generated{byGenerator}. Verified locally — this file was never uploaded.",
+    "signedNoAiFact": "Valid C2PA signature{byGenerator}. The signer declares no AI involvement (e.g. a camera-signed photo). Verified locally — not uploaded.",
+    "signedAiAction": "→ No further check needed — a valid signature outranks any statistical detector.",
+    "signedNoAiAction": "→ Provenance is verified; what the content is, the signer already declared. Nothing more to check here.",
+    "signedDisclaimer": "A signature proves what the signer declared, not ground truth — see “Honest limits”.",
+    "invalidBadge": "Invalid signature",
+    "invalidFact": "A C2PA manifest is embedded, but its signature is invalid — the file or its metadata was modified after signing. The manifest's claims cannot be trusted.",
+    "checkAnyway": "Check anyway (statistical)",
+    "checkAnywayNote": "Statistical checks do not rely on the broken manifest.",
+    "loading": "Checking the C2PA signature locally in your browser — first load fetches the verification library (~11 MB), the file itself is not uploaded.",
+    "loadingSlow": "Still loading — slow connection? You can skip and run the server check instead.",
+    "skip": "Skip signature check",
+    "tooBig": "This file is {size} — the limit is 8 MB. Re-export or compress the image (any PNG/JPEG under 8 MB keeps enough metadata for the checks).",
+    "badFormat": "Unsupported format — PNG or JPEG only. WebP and GIF carry no metadata we can verify; convert the image to PNG first.",
+    "unreadable": "The file could not be read as an image. Try re-saving it as PNG or JPEG.",
+    "noManifest": "No C2PA manifest — the server will check metadata fingerprints and (if configured) an external detector.",
+    "unavailable": "C2PA check is unavailable in this browser — the server check will run without it."
   },
   "howItWorks": [
     {
