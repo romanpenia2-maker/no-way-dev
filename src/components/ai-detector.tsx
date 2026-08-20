@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { DetectorCopy, DetectorThresholds } from "@data/schemas/detector.schema";
@@ -36,6 +36,14 @@ const STATUS_VARIANT: Record<DetectionStatus, "solid" | "default" | "secondary">
 
 type Phase = "idle" | "c2pa" | "posting" | "done" | "error";
 
+/** Client-side preview of the uploaded image, shown inside the result card. */
+export interface ImagePreviewState {
+  /** Object URL created via URL.createObjectURL — owned and revoked by AiDetector. */
+  url: string;
+  name: string;
+  bytes: number;
+}
+
 export function AiDetector({ initialKind, copy, thresholds }: Props) {
   const [kind, setKind] = useState<DetectionKind>(initialKind);
   const [text, setText] = useState("");
@@ -44,18 +52,43 @@ export function AiDetector({ initialKind, copy, thresholds }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<DetectionResponse | null>(null);
   const [c2pa, setC2pa] = useState<C2paOutcome | null>(null);
+  const [preview, setPreview] = useState<ImagePreviewState | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const previewUrlRef = useRef<string | null>(null);
 
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
   const lines = text.split("\n").filter((l) => l.trim().length > 0).length;
+
+  const setPreviewFile = useCallback((f: File | null) => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+    if (!f) {
+      setPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(f);
+    previewUrlRef.current = url;
+    setPreview({ url, name: f.name, bytes: f.size });
+  }, []);
+
+  // Revoke the object URL when the component unmounts.
+  useEffect(
+    () => () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    },
+    [],
+  );
 
   const reset = useCallback(() => {
     setResult(null);
     setError(null);
     setC2pa(null);
     setPhase("idle");
-  }, []);
+    setPreviewFile(null);
+  }, [setPreviewFile]);
 
   const switchTab = (next: DetectionKind) => {
     setKind(next);
@@ -68,6 +101,7 @@ export function AiDetector({ initialKind, copy, thresholds }: Props) {
       setResult(null);
       setError(null);
       setC2pa(null);
+      setPreviewFile(f);
       if (!f) return;
       if (f.size > thresholds.image.maxBytes) {
         setError(`Image exceeds the ${Math.round(thresholds.image.maxBytes / 1024 / 1024)} MB limit.`);
@@ -78,7 +112,7 @@ export function AiDetector({ initialKind, copy, thresholds }: Props) {
       setC2pa(outcome);
       setPhase("idle");
     },
-    [thresholds.image.maxBytes],
+    [thresholds.image.maxBytes, setPreviewFile],
   );
 
   const submit = useCallback(async () => {
@@ -219,10 +253,17 @@ export function AiDetector({ initialKind, copy, thresholds }: Props) {
 
       {/* Local C2PA verdict (no API call needed) */}
       {c2pa && (c2pa.kind === "signed_ai" || c2pa.kind === "signed_other" || c2pa.kind === "invalid") ? (
-        <C2paVerdict outcome={c2pa} copy={copy} />
+        <C2paVerdict outcome={c2pa} copy={copy} preview={preview} />
       ) : null}
 
-      {result ? <DetectionResultView result={result} copy={copy} text={kind === "image" ? null : text} /> : null}
+      {result ? (
+        <DetectionResultView
+          result={result}
+          copy={copy}
+          text={kind === "image" ? null : text}
+          preview={kind === "image" ? preview : null}
+        />
+      ) : null}
 
       {/* How it works */}
       <HowItWorks copy={copy} />
@@ -297,64 +338,175 @@ function ImageInput({
   );
 }
 
+// --- image preview ---------------------------------------------------------------
+
+function formatBytes(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${bytes} B`;
+}
+
+/** Thumbnail + file facts of the uploaded image. Dimensions are read once the image loads. */
+function ImagePreview({ preview }: { preview: ImagePreviewState }) {
+  const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  // The image may already be cached/complete before React attaches onLoad.
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth > 0) {
+      setDims({ w: img.naturalWidth, h: img.naturalHeight });
+    }
+  }, [preview.url]);
+  return (
+    <div className="flex items-start gap-4">
+      {/* key resets dimension state when a new file is picked */}
+      {/* eslint-disable-next-line @next/next/no-img-element -- blob: object URLs are not supported by next/image */}
+      <img
+        key={preview.url}
+        ref={imgRef}
+        src={preview.url}
+        alt={`Preview of ${preview.name}`}
+        onLoad={(e) => {
+          const img = e.currentTarget;
+          setDims({ w: img.naturalWidth, h: img.naturalHeight });
+        }}
+        className="h-24 w-24 shrink-0 border border-line bg-line object-cover sm:h-32 sm:w-32"
+      />
+      <div className="min-w-0 space-y-1 pt-0.5">
+        <p className="break-all font-mono text-xs font-bold leading-5">{preview.name}</p>
+        <p className="font-mono text-[11px] text-ink2 nums">
+          {formatBytes(preview.bytes)}
+          {dims ? ` · ${dims.w.toLocaleString("en-US")} × ${dims.h.toLocaleString("en-US")} px` : ""}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** Collapsed-by-default block for secondary/technical detail (e-ink style disclosure). */
+function TechnicalDetails({ label = "Technical details", children }: { label?: string; children: React.ReactNode }) {
+  return (
+    <details className="group border border-line">
+      <summary className="flex min-h-11 cursor-pointer items-center px-4 py-3 font-mono text-xs font-bold uppercase tracking-[0.08em] text-ink2 hover:bg-ink hover:text-paper">
+        {label}
+      </summary>
+      <div className="border-t border-line px-4 py-3">{children}</div>
+    </details>
+  );
+}
+
 // --- C2PA local verdict --------------------------------------------------------
 
-function C2paVerdict({ outcome, copy }: { outcome: C2paOutcome; copy: DetectorCopy }) {
+export function C2paVerdict({
+  outcome,
+  copy,
+  preview,
+}: {
+  outcome: C2paOutcome;
+  copy: DetectorCopy;
+  preview?: ImagePreviewState | null;
+}) {
   if (outcome.kind === "invalid") {
     return (
-      <section className="space-y-3 border-[1.5px] border-ink p-4 sm:p-6">
-        <Badge variant="solid">Invalid signature</Badge>
-        <p className="text-sm leading-6">{outcome.detail}</p>
-        <p className="text-sm text-ink2">{copy.shortDisclaimer}</p>
+      <section className="space-y-4 border-[1.5px] border-ink p-4 sm:p-6" aria-live="polite">
+        {preview ? (
+          <div className="border-b border-line pb-4">
+            <ImagePreview preview={preview} />
+          </div>
+        ) : null}
+        <div className="space-y-2">
+          <Badge variant="solid" className="px-3 py-1.5 text-xs">
+            Invalid signature
+          </Badge>
+          <p className="text-sm leading-6">{outcome.detail}</p>
+        </div>
+        <p className="border-t border-line pt-3 text-xs leading-5 text-ink2">{copy.shortDisclaimer}</p>
       </section>
     );
   }
   if (outcome.kind !== "signed_ai" && outcome.kind !== "signed_other") return null;
   const isAi = outcome.kind === "signed_ai";
   return (
-    <section className="space-y-3 border-[1.5px] border-ink p-4 sm:p-6">
-      <Badge variant={STATUS_VARIANT.provenance_signed}>
-        {isAi ? copy.statusLabels.provenance_signed : "Cryptographically signed (no AI claim)"}
-      </Badge>
-      <p className="text-sm leading-6">
-        This file carries a valid C2PA content signature
-        {outcome.generator ? (
-          <>
-            {" "}issued by <span className="font-mono font-bold">{outcome.generator}</span>
-          </>
-        ) : null}
-        .{" "}
-        {isAi
-          ? "The signed manifest identifies the content as AI-generated — this is a definitive provenance answer, no statistical detection was needed."
-          : "The manifest does not claim AI generation (e.g. a camera-signed photo). Provenance is verified; content origin is whatever the signer declared."}
-      </p>
-      <p className="font-mono text-[11px] text-ink2">
-        Verified locally in your browser with the C2PA open SDK — the file was not uploaded for this verdict. Validation state: {outcome.validationState}.
-      </p>
+    <section className="space-y-4 border-[1.5px] border-ink p-4 sm:p-6" aria-live="polite">
+      {preview ? (
+        <div className="border-b border-line pb-4">
+          <ImagePreview preview={preview} />
+        </div>
+      ) : null}
+
+      {/* Primary verdict — the most contrasty element of the card */}
+      <div className="space-y-3">
+        <Badge variant={STATUS_VARIANT.provenance_signed} className="px-3 py-1.5 text-xs">
+          {isAi ? copy.statusLabels.provenance_signed : "Signed, no AI claim"}
+        </Badge>
+        {/* Key fact: who signed and what the manifest claims */}
+        <p className="text-base leading-7">
+          Valid C2PA content signature
+          {outcome.generator ? (
+            <>
+              {" "}issued by <span className="font-mono font-bold">{outcome.generator}</span>
+            </>
+          ) : null}
+          .{" "}
+          {isAi
+            ? "The signed manifest identifies the content as AI-generated — a definitive provenance answer, no statistical detection was needed."
+            : "The manifest does not claim AI generation (e.g. a camera-signed photo). Provenance is verified; content origin is whatever the signer declared."}
+        </p>
+      </div>
+
+      {/* Secondary technical detail — dimmed and collapsed by default */}
+      <TechnicalDetails label="Manifest details">
+        <p className="font-mono text-xs leading-6 text-ink2">
+          Verified locally in your browser with the C2PA open SDK — the file was not uploaded for this verdict.
+          <br />
+          Validation state: {outcome.validationState}
+          {outcome.generator ? (
+            <>
+              <br />
+              Claim generator: {outcome.generator}
+            </>
+          ) : null}
+        </p>
+      </TechnicalDetails>
+
+      <p className="text-xs leading-5 text-ink2">{copy.shortDisclaimer}</p>
     </section>
   );
 }
 
 // --- server result -------------------------------------------------------------
 
-function DetectionResultView({
+export function DetectionResultView({
   result,
   copy,
   text,
+  preview,
 }: {
   result: DetectionResponse;
   copy: DetectorCopy;
   text: string | null;
+  preview?: ImagePreviewState | null;
 }) {
   return (
     <section className="space-y-6 border-[1.5px] border-ink p-4 sm:p-6" aria-live="polite">
-      <div className="flex flex-wrap items-center gap-3">
-        <Badge variant={STATUS_VARIANT[result.status]} className="px-2.5 py-1 text-[11px]">
+      {/* Uploaded image, so the verdict is visibly tied to the file that was checked */}
+      {preview ? (
+        <div className="border-b border-line pb-4">
+          <ImagePreview preview={preview} />
+        </div>
+      ) : null}
+
+      {/* Primary verdict: status badge + probability, the most contrasty part of the card */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+        <Badge variant={STATUS_VARIANT[result.status]} className="px-3 py-1.5 text-xs">
           {copy.statusLabels[result.status]}
         </Badge>
         {result.probability !== null ? (
-          <span className="font-mono text-sm font-bold nums">
-            {(result.probability * 100).toFixed(0)}% AI probability
+          <span className="font-mono text-2xl font-bold leading-none nums">
+            {(result.probability * 100).toFixed(0)}%
+            <span className="ml-2 align-middle font-mono text-[11px] font-normal uppercase tracking-[0.08em] text-ink2">
+              AI probability
+            </span>
           </span>
         ) : null}
       </div>
@@ -390,19 +542,23 @@ function DetectionResultView({
 
       {text && result.spans.length > 0 ? <SpanHighlights text={text} spans={result.spans} /> : null}
 
+      {/* Key facts behind the verdict — mid-level emphasis */}
       {result.notes.length > 0 ? (
         <ul className="space-y-1.5 border-t border-line pt-4">
           {result.notes.map((note) => (
-            <li key={note} className="text-sm leading-6 text-ink2">
+            <li key={note} className="text-sm leading-6">
               · {note}
             </li>
           ))}
         </ul>
       ) : null}
 
-      <LayerStates layers={result.layers} copy={copy} />
+      {/* Secondary technical detail — dimmed, collapsed by default */}
+      <TechnicalDetails label="Signals & technical details">
+        <LayerStates layers={result.layers} copy={copy} />
+      </TechnicalDetails>
 
-      <p className="border-t border-ink pt-3 text-[13px] leading-6 text-ink2">{result.disclaimer}</p>
+      <p className="border-t border-line pt-3 text-xs leading-5 text-ink2">{result.disclaimer}</p>
     </section>
   );
 }
@@ -488,10 +644,7 @@ function LayerStates({
     skipped: "skipped",
   };
   return (
-    <div className="space-y-1 border-t border-line pt-4">
-      <h3 className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink2">
-        Signals used
-      </h3>
+    <div className="space-y-1">
       {(Object.keys(layers) as (keyof typeof layers)[]).map((key) => (
         <div key={key} className="flex flex-wrap items-baseline gap-x-3 font-mono text-[11px]">
           <span className="w-44 shrink-0 font-bold">{copy.layerLabels[key]}</span>
