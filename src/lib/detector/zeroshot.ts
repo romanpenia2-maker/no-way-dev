@@ -1,5 +1,5 @@
 import type { DetectorThresholds } from "@data/schemas/detector.schema";
-import { getLogprobProvider, fetchEchoLogprobs, meanLogprobInRange, MAX_SCORE_CHARS } from "./llm";
+import { getLogprobProvider, fetchEchoLogprobs, meanLogprobInRange, documentMeanLogprob, MAX_SCORE_CHARS } from "./llm";
 import { bootstrapCi, calibrateScore, clamp01, mean, splitIntoSpans } from "./spans";
 import type { SpanScore } from "./types";
 
@@ -98,11 +98,22 @@ export async function runZeroshot(
       return { state: "error", detail: "Provider returned logprobs that do not align with spans." };
     }
 
+    // Verdict probability: sigmoid of the DOCUMENT-level ratio, not the mean of
+    // per-sentence sigmoids — sentence fragments are too noisy at scale=14 and
+    // the mean-of-sigmoids skewed human texts toward AI (observed 2026-08-21).
+    // Per-span scores stay for UI highlighting only.
+    const docA = documentMeanLogprob(a.tokens);
+    const docB = documentMeanLogprob(b.tokens);
+    if (docA === null || docB === null) {
+      return { state: "error", detail: "Provider returned no usable document logprobs." };
+    }
+    const docRatio = -docA / Math.max(-docB, 1e-6);
+    const probability = clamp01(calibrateScore(docRatio, calibration.scoreMidpoint, calibration.scoreScale));
     const values = spanScores.map((s) => s.score);
     return {
       state: "ok",
       provider: provider.name,
-      probability: clamp01(mean(values)),
+      probability,
       ci: bootstrapCi(values, thresholds.bootstrap.resamples, thresholds.bootstrap.ciLevel),
       spans: spanScores,
       truncated,
