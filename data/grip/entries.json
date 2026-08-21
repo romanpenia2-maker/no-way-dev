@@ -19,8 +19,16 @@
     "id": "gmt2zp02bg3hi",
     "name": "Vadim",
     "kg": 72.3,
+    "photoPath": "data/grip/photos/gmt2zp02bg3hi.jpg",
     "createdAt": "2026-08-21T13:33:03.251Z",
+    "source": "photo-ai"
+  },
+  {
+    "id": "gmt2zs2x0x22q",
+    "name": "Kostia",
+    "kg": 54.6,
+    "createdAt": "2026-08-21T13:35:26.916Z",
     "source": "photo-ai",
-    "photoPath": "data/grip/photos/gmt2zp02bg3hi.jpg"
+    "photoPath": "data/grip/photos/gmt2zs2x0x22q.jpg"
   }
 ]
