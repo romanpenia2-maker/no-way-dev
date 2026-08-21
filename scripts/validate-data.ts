@@ -12,6 +12,7 @@ import type { z } from "zod";
 import { modelSchema, type Model } from "../data/schemas/model.schema";
 import { providerSchema, type Provider } from "../data/schemas/provider.schema";
 import { benchmarksMetaSchema } from "../data/schemas/benchmarks-meta.schema";
+import { gripEntriesSchema } from "../data/schemas/grip.schema";
 import {
   attributionConfigSchema,
   detectorCopySchema,
@@ -167,6 +168,35 @@ if (fs.existsSync(detectorDir)) {
     } catch (e) {
       fail(`data/detector/${file}`, `invalid JSON: ${(e as Error).message}`);
     }
+  }
+}
+
+// --- Grip leaderboard ----------------------------------------------------------
+// data/grip/entries.json is appended by /api/grip/submit at runtime; keep the
+// file schema-valid and every referenced photo present in the repo.
+const gripFile = path.join(root, "data", "grip", "entries.json");
+if (fs.existsSync(gripFile)) {
+  checked += 1;
+  try {
+    const raw = JSON.parse(fs.readFileSync(gripFile, "utf8"));
+    const parsed = gripEntriesSchema.safeParse(raw);
+    if (!parsed.success) {
+      fail(
+        "data/grip/entries.json",
+        parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "),
+      );
+    } else {
+      const ids = new Set<string>();
+      for (const entry of parsed.data) {
+        if (ids.has(entry.id)) fail("data/grip/entries.json", `duplicate id "${entry.id}"`);
+        ids.add(entry.id);
+        if (entry.photoPath && !fs.existsSync(path.join(root, entry.photoPath))) {
+          fail("data/grip/entries.json", `photo "${entry.photoPath}" (${entry.id}) is missing from the repo`);
+        }
+      }
+    }
+  } catch (e) {
+    fail("data/grip/entries.json", `invalid JSON: ${(e as Error).message}`);
   }
 }
 
