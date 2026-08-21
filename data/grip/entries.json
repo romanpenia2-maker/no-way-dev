@@ -27,8 +27,16 @@
     "id": "gmt2zs2x0x22q",
     "name": "Kostia",
     "kg": 54.6,
+    "photoPath": "data/grip/photos/gmt2zs2x0x22q.jpg",
     "createdAt": "2026-08-21T13:35:26.916Z",
+    "source": "photo-ai"
+  },
+  {
+    "id": "gmt3017a6qrx3",
+    "name": "Staging Smoke",
+    "kg": 42.5,
+    "createdAt": "2026-08-21T13:42:32.478Z",
     "source": "photo-ai",
-    "photoPath": "data/grip/photos/gmt2zs2x0x22q.jpg"
+    "photoPath": "data/grip/photos/gmt3017a6qrx3.jpg"
   }
 ]
