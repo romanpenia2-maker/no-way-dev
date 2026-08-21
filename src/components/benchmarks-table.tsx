@@ -14,7 +14,7 @@ import {
   type CategorySlice,
   type LeaderboardRow,
 } from "@/lib/arena";
-import { TRACKED_BENCHMARKS, type TrackedBenchmarkValue } from "@/lib/benchmark-keys";
+
 import { useSortable } from "@/lib/use-sortable";
 import { valueScore } from "@/lib/value";
 import type { ArenaCategory } from "@data/schemas/model.schema";
@@ -22,30 +22,6 @@ import { cn, formatCompact, formatDate, formatPricePer1M, formatTokens } from "@
 
 function tabLabel(cat: ArenaCategory, slices: Record<ArenaCategory, CategorySlice>): string {
   return cat === "text" ? "Overall" : slices[cat].meta.label;
-}
-
-/** Focusable caveat marker with a CSS-only tooltip (hover on fine pointers, focus/tap elsewhere). */
-function Caveat({ note }: { note: string }) {
-  return (
-    <span tabIndex={0} role="note" aria-label={`Caveat: ${note}`} className="caveat relative ml-0.5 inline-block">
-      <sup className="font-bold" aria-hidden>
-        †
-      </sup>
-      <span className="caveat-tip" aria-hidden>
-        {note}
-      </span>
-    </span>
-  );
-}
-
-function ScoreValue({ value }: { value?: TrackedBenchmarkValue }) {
-  if (!value) return <span className="text-ink2">—</span>;
-  return (
-    <>
-      {value.score.toFixed(1)}
-      {value.note ? <Caveat note={value.note} /> : null}
-    </>
-  );
 }
 
 function buildColumns(): DataColumn<LeaderboardRow>[] {
@@ -99,18 +75,9 @@ function buildColumns(): DataColumn<LeaderboardRow>[] {
       render: (row) => <span className="text-ink2">{row.arena.rank}</span>,
       exportValue: (row) => row.arena.rank,
     },
-    ...TRACKED_BENCHMARKS.map(
-      (t): DataColumn<LeaderboardRow> => ({
-        key: t.key,
-        label: t.label,
-        numeric: true,
-        hideBelowLg: true,
-        sortValue: (row) => row.tracked[t.key]?.score,
-        tiebreak: (a, b) => b.arena.elo - a.arena.elo,
-        render: (row) => <ScoreValue value={row.tracked[t.key]} />,
-        exportValue: (row) => row.tracked[t.key]?.score.toFixed(1) ?? "—",
-      }),
-    ),
+    // Phase A (UX audit): the table defaults to 4 columns — Model, Arena score,
+    // Value, Rank. SWE-bench/Terminal/GPQA/HLE scores live in the expanded row
+    // panel and on the model page instead of extra columns.
   ];
 }
 
@@ -351,6 +318,13 @@ export function BenchmarksExplorer({
       <div key={cat} className="slice-enter space-y-6">
         <StatsStrip items={stats} boxed />
 
+        {/* Legend — one line above the table so the markers make sense in context */}
+        <p className="font-mono text-[11px] leading-5 text-ink2">
+          — not measured / not published · <sup className="font-bold">†</sup> score has a caveat — see footnotes
+          below · <span className="font-bold">P</span> preliminary rating (low vote count) · <ValueFootnote /> ·
+          sort by any column · open a row for full arena &amp; benchmark data.
+        </p>
+
         <DataTable
           rows={slice.rows}
           columns={columns}
@@ -395,12 +369,6 @@ export function BenchmarksExplorer({
             </>
           )}
         />
-
-        <p className="font-mono text-[11px] leading-5 text-ink2">
-          — not measured / not published · <sup className="font-bold">†</sup> score has a caveat — focus or tap the
-          marker for details, see footnotes below · <span className="font-bold">P</span> preliminary rating (low vote
-          count) · <ValueFootnote /> · sort by any column · open a row for full arena &amp; benchmark data.
-        </p>
       </div>
     </div>
   );
