@@ -6,6 +6,7 @@ const links = [
   { href: "/calculators/cost", label: "Cost Calculator" },
   { href: "/ai-detector", label: "AI Detector" },
   { href: "/guides", label: "Guides" },
+  { href: "/grip", label: "Grip" },
   { href: "/methodology", label: "Methodology" },
   { href: "/about", label: "About" },
   { href: "/sitemap.xml", label: "Sitemap" },
