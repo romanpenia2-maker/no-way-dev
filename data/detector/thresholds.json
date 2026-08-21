@@ -1,7 +1,7 @@
 {
-  "version": 1,
-  "updatedAt": "2026-08-20",
-  "note": "Detection thresholds for the AI content detector. Two-FPR zone model: scores at or above tauFpr1 map to the confident zone, tauFpr5 to the likely zone (and symmetrically on the human side); the band between the zones is an abstention area. Calibration values (scoreMidpoint/scoreScale) are the sigmoid mapping from the Binoculars-style score to a probability and MUST be re-fit on a domain calibration corpus before trusting the numbers (see docs, v1.5).",
+  "version": 2,
+  "updatedAt": "2026-08-21",
+  "note": "Detection thresholds for the AI content detector. Two-FPR zone model: scores at or above tauFpr1 map to the confident zone, tauFpr5 to the likely zone (and symmetrically on the human side); the band between the zones is an abstention area. scoreMidpoint/scoreScale were fit on a quick 8-sample probe (4 AI / 4 human, 2026-08-21) after the model-pair fix: ratios were ~1.42-1.51 (AI) vs ~0.99-1.04 (human), so midpoint sits midway at 1.23 with the sigmoid increasing in score. MUST be re-fit on a larger domain calibration corpus before trusting the numbers (v1.5 backlog). Code zone reuses the text calibration as an interim \u2014 code-specific corpus pending.",
   "sourceUrl": "https://github.com/romanpenia2-maker/no-way-dev/blob/rc/data/detector/thresholds.json",
   "text": {
     "minWords": 150,
@@ -9,7 +9,7 @@
     "attributionMinWords": 100,
     "tauFpr1": 0.8,
     "tauFpr5": 0.55,
-    "scoreMidpoint": 0.95,
+    "scoreMidpoint": 1.23,
     "scoreScale": 14
   },
   "code": {
@@ -18,7 +18,7 @@
     "attributionMinWords": 100,
     "tauFpr1": 0.8,
     "tauFpr5": 0.55,
-    "scoreMidpoint": 0.9,
+    "scoreMidpoint": 1.23,
     "scoreScale": 14
   },
   "image": {
