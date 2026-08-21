@@ -1,0 +1,33 @@
+name: One-off — push detector API keys to Vercel env
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  set-env:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+      - name: Link project
+        run: vercel link --yes --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Add env vars (production + preview)
+        env:
+          DEEPINFRA_API_KEY: ${{ secrets.DEEPINFRA_API_KEY }}
+          SIGHTENGINE_USER: ${{ secrets.SIGHTENGINE_USER }}
+          SIGHTENGINE_SECRET: ${{ secrets.SIGHTENGINE_SECRET }}
+        run: |
+          set -e
+          for ENV in production preview; do
+            printf '%s' "$DEEPINFRA_API_KEY"   | vercel env add DEEPINFRA_API_KEY   $ENV --force --token=${{ secrets.VERCEL_TOKEN }}
+            printf '%s' "$SIGHTENGINE_USER"    | vercel env add SIGHTENGINE_USER    $ENV --force --token=${{ secrets.VERCEL_TOKEN }}
+            printf '%s' "$SIGHTENGINE_SECRET"  | vercel env add SIGHTENGINE_SECRET  $ENV --force --token=${{ secrets.VERCEL_TOKEN }}
+          done
+      - name: Verify (names only, values masked)
+        run: vercel env ls --token=${{ secrets.VERCEL_TOKEN }} | grep -E 'DEEPINFRA|SIGHTENGINE' || true
