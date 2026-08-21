@@ -11,8 +11,16 @@
     "id": "gmt2zn16gwaor",
     "name": "Adr Yakimashenko",
     "kg": 45.6,
+    "photoPath": "data/grip/photos/gmt2zn16gwaor.jpg",
     "createdAt": "2026-08-21T13:31:31.384Z",
+    "source": "photo-ai"
+  },
+  {
+    "id": "gmt2zp02bg3hi",
+    "name": "Vadim",
+    "kg": 72.3,
+    "createdAt": "2026-08-21T13:33:03.251Z",
     "source": "photo-ai",
-    "photoPath": "data/grip/photos/gmt2zn16gwaor.jpg"
+    "photoPath": "data/grip/photos/gmt2zp02bg3hi.jpg"
   }
 ]
