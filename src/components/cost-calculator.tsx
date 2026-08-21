@@ -57,11 +57,21 @@ function buildResultColumns(providerNames: Record<string, string>): DataColumn<C
 
 /** E-ink CSS bars: horizontal divs, width % of the max, mono figures on the right. */
 function CostBars({ rows, providerNames }: { rows: CostRow[]; providerNames: Record<string, string> }) {
-  const max = rows[0]?.monthlyCost ?? 0;
+  // Rows arrive sorted cheapest-first — scale against the largest finite cost,
+  // never rows[0], otherwise every bar overflows the card.
+  const max = rows.reduce(
+    (m, row) => (Number.isFinite(row.monthlyCost) && row.monthlyCost > m ? row.monthlyCost : m),
+    0,
+  );
   return (
-    <ul className="space-y-2" role="img" aria-label="Bar chart of the top cheapest models by monthly cost">
+    <ul
+      className="min-w-0 space-y-2 overflow-hidden"
+      role="img"
+      aria-label="Bar chart of the top cheapest models by monthly cost"
+    >
       {rows.map((row, i) => {
-        const pct = max > 0 && Number.isFinite(row.monthlyCost) ? (row.monthlyCost / max) * 100 : 0;
+        const pct =
+          max > 0 && Number.isFinite(row.monthlyCost) ? Math.min(100, (row.monthlyCost / max) * 100) : 0;
         return (
           <li
             key={`${row.modelSlug}-${row.pricingProvider}`}
@@ -74,7 +84,7 @@ function CostBars({ rows, providerNames }: { rows: CostRow[]; providerNames: Rec
                 @ {providerNames[row.pricingProvider] ?? row.pricingProvider}
               </span>
             </span>
-            <span className="h-4 flex-1" aria-hidden>
+            <span className="h-4 min-w-0 flex-1 overflow-hidden" aria-hidden>
               <span
                 className="block h-full bg-ink motion-safe:transition-[width]"
                 style={{ width: `${pct}%`, opacity: Math.max(0.4, 1 - i * 0.07) }}
@@ -188,7 +198,7 @@ export function CostCalculator({
         </div>
       </Card>
 
-      <Card className="p-4 sm:p-6">
+      <Card className="overflow-hidden p-4 sm:p-6">
         <div className="mb-4 flex items-baseline justify-between gap-2">
           <h2 className="font-display text-lg font-bold uppercase leading-[0.94] tracking-[-0.02em]">
             Top cheapest — monthly cost

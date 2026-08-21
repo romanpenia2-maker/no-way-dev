@@ -14,7 +14,7 @@ import {
   type PricingTableState,
 } from "@/lib/pricing-state";
 import { useSortable } from "@/lib/use-sortable";
-import { formatDate, formatPricePer1M, formatTokens, isOffPeakNote } from "@/lib/utils";
+import { formatPricePer1M, formatTokens, isOffPeakNote } from "@/lib/utils";
 
 export function PricingTable({
   rows,
@@ -86,7 +86,9 @@ export function PricingTable({
           row.cachedInputPer1M !== undefined ? (
             formatPricePer1M(row.cachedInputPer1M)
           ) : (
-            <span className="text-ink2">—</span>
+            <span className="text-ink2" title="No cached rate published">
+              —
+            </span>
           ),
         exportValue: (row) =>
           row.cachedInputPer1M !== undefined ? formatPricePer1M(row.cachedInputPer1M) : "—",
@@ -108,13 +110,6 @@ export function PricingTable({
         sortValue: (row) => row.contextTokens,
         render: (row) => <span className="text-ink2">{formatTokens(row.contextTokens)}</span>,
         exportValue: (row) => formatTokens(row.contextTokens),
-      },
-      {
-        key: "updated",
-        label: "Updated",
-        sortValue: (row) => row.updatedAt,
-        render: (row) => <span className="font-mono text-xs text-ink2 nums">{formatDate(row.updatedAt)}</span>,
-        exportValue: (row) => formatDate(row.updatedAt),
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -248,7 +243,6 @@ export function PricingTable({
             <span>cached {row.cachedInputPer1M !== undefined ? formatPricePer1M(row.cachedInputPer1M) : "—"}</span>
             <span>out {formatPricePer1M(row.outputPer1M)}</span>
             <span>ctx {formatTokens(row.contextTokens)}</span>
-            <span>upd {formatDate(row.updatedAt)}</span>
           </>
         )}
       />

@@ -1,0 +1,34 @@
+[
+  {
+    "id": "gmt2zkzihohzc",
+    "name": "Roman",
+    "kg": 90.9,
+    "photoPath": "data/grip/photos/gmt2zkzihohzc.jpg",
+    "createdAt": "2026-08-21T13:29:55.913Z",
+    "source": "photo-ai"
+  },
+  {
+    "id": "gmt2zn16gwaor",
+    "name": "Adr Yakimashenko",
+    "kg": 45.6,
+    "photoPath": "data/grip/photos/gmt2zn16gwaor.jpg",
+    "createdAt": "2026-08-21T13:31:31.384Z",
+    "source": "photo-ai"
+  },
+  {
+    "id": "gmt2zp02bg3hi",
+    "name": "Vadim",
+    "kg": 72.3,
+    "photoPath": "data/grip/photos/gmt2zp02bg3hi.jpg",
+    "createdAt": "2026-08-21T13:33:03.251Z",
+    "source": "photo-ai"
+  },
+  {
+    "id": "gmt2zs2x0x22q",
+    "name": "Kostia",
+    "kg": 54.6,
+    "photoPath": "data/grip/photos/gmt2zs2x0x22q.jpg",
+    "createdAt": "2026-08-21T13:35:26.916Z",
+    "source": "photo-ai"
+  }
+]

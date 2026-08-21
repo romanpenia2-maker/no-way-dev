@@ -47,7 +47,7 @@ export function Header() {
           </Link>
           <span className="hidden h-5 w-px bg-line sm:block" aria-hidden="true" />
           <span className="hidden font-mono text-[10px] uppercase tracking-[0.08em] text-ink2 sm:block">
-            e-ink · 100% ▮ · refresh 60 min
+            data refreshed weekly
           </span>
         </div>
 

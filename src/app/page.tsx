@@ -44,6 +44,14 @@ const tools = [
   },
 ];
 
+/**
+ * Phase A simplification (UX audit 2026-08-21): "How it works" duplicates
+ * /methodology and the Digest block announces a feature that does not exist
+ * yet — both are kept in code but excluded from the home render until
+ * Phase B decides their final place.
+ */
+const SHOW_HOME_PHASE_B_BLOCKS = false;
+
 const howItWorks = [
   {
     title: "Data lives in git",
@@ -82,6 +90,9 @@ export default function HomePage() {
 
       {/* Hero */}
       <section className="border-b border-line py-14 sm:py-20">
+        <p className="mb-4 font-mono text-[11px] font-bold uppercase tracking-[0.08em]">
+          LLM API pricing, verified weekly
+        </p>
         <h1 className="font-display text-[clamp(32px,10vw,96px)] font-extrabold uppercase leading-[0.94] tracking-[-0.03em]">
           Read the market
           <br />
@@ -110,10 +121,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Stats strip */}
-      <StatsStrip items={stats} />
-
-      {/* Top-5 cheapest */}
+      {/* Top-5 cheapest — prices on the first screen, right after the hero */}
       <section className="border-b border-line py-12">
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="font-display text-2xl font-bold uppercase leading-[0.94] tracking-[-0.02em]">
@@ -135,8 +143,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Tools */}
-      <section className="border-b border-line py-12">
+      {/* Stats strip */}
+      <StatsStrip items={stats} />
+
+      {/* Tools — last section on the page, no bottom border before the footer */}
+      <section className="py-12">
         <h2 className="mb-6 font-display text-2xl font-bold uppercase leading-[0.94] tracking-[-0.02em]">Tools</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {tools.map((t) => (
@@ -155,44 +166,48 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="border-b border-line py-12">
-        <h2 className="mb-6 font-display text-2xl font-bold uppercase leading-[0.94] tracking-[-0.02em]">
-          How it works
-        </h2>
-        <div className="grid gap-8 sm:grid-cols-3">
-          {howItWorks.map((s, i) => (
-            <div key={s.title} className="space-y-2 border-t border-ink pt-3">
-              <span className="font-mono text-xs font-bold text-ink2 nums">{String(i + 1).padStart(2, "0")}</span>
-              <h3 className="font-semibold">{s.title}</h3>
-              <p className="text-sm leading-6 text-ink2">{s.text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Release tracking — digest emails arrive in phase 3; for now, watch the repo */}
-      <section className="py-12 sm:py-16">
-        <div className="border border-ink p-6 sm:p-10">
-          <div className="space-y-4">
-            <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">Digest</p>
-            <h2 className="font-display text-2xl font-bold uppercase leading-[0.94] tracking-[-0.02em]">
-              Price-change digest
-            </h2>
-            <p className="max-w-lg text-sm text-ink2">
-              Email alerts land in a later phase. Until then, every data update is a commit — watch releases on
-              GitHub to catch price changes as they ship.
-            </p>
-            <a
-              href={`${site.github}/releases`}
-              rel="noopener"
-              className="inline-flex h-10 items-center border border-ink px-6 font-mono text-xs font-bold uppercase tracking-[0.08em] hover:bg-ink hover:text-paper"
-            >
-              Watch releases on GitHub →
-            </a>
+      {/* How it works — hidden in Phase A (see SHOW_HOME_PHASE_B_BLOCKS) */}
+      {SHOW_HOME_PHASE_B_BLOCKS && (
+        <section className="border-b border-line py-12">
+          <h2 className="mb-6 font-display text-2xl font-bold uppercase leading-[0.94] tracking-[-0.02em]">
+            How it works
+          </h2>
+          <div className="grid gap-8 sm:grid-cols-3">
+            {howItWorks.map((s, i) => (
+              <div key={s.title} className="space-y-2 border-t border-ink pt-3">
+                <span className="font-mono text-xs font-bold text-ink2 nums">{String(i + 1).padStart(2, "0")}</span>
+                <h3 className="font-semibold">{s.title}</h3>
+                <p className="text-sm leading-6 text-ink2">{s.text}</p>
+              </div>
+            ))}
           </div>
-        </div>
-      </section>
-       </div>
+        </section>
+      )}
+
+      {/* Release tracking — digest emails arrive in phase 3; hidden in Phase A */}
+      {SHOW_HOME_PHASE_B_BLOCKS && (
+        <section className="py-12 sm:py-16">
+          <div className="border border-ink p-6 sm:p-10">
+            <div className="space-y-4">
+              <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink2">Digest</p>
+              <h2 className="font-display text-2xl font-bold uppercase leading-[0.94] tracking-[-0.02em]">
+                Price-change digest
+              </h2>
+              <p className="max-w-lg text-sm text-ink2">
+                Email alerts land in a later phase. Until then, every data update is a commit — watch releases on
+                GitHub to catch price changes as they ship.
+              </p>
+              <a
+                href={`${site.github}/releases`}
+                rel="noopener"
+                className="inline-flex h-10 items-center border border-ink px-6 font-mono text-xs font-bold uppercase tracking-[0.08em] hover:bg-ink hover:text-paper"
+              >
+                Watch releases on GitHub →
+              </a>
+            </div>
+          </div>
+        </section>
+      )}
+    </div>
   );
 }

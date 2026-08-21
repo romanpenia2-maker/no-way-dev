@@ -129,8 +129,9 @@ export function CompareExplorer({
         : selected.length < MAX_COMPARE
           ? [...selected, slug]
           : selected;
-      const qs = next.length ? `?models=${next.join(",")}` : "";
-      router.replace(`${pathname}${qs}`, { scroll: false });
+      // Keep the param present even when empty — an absent ?models= means
+      // "first visit" and the server prefills two default models.
+      router.replace(`${pathname}?models=${next.join(",")}`, { scroll: false });
     },
     [selected, router, pathname],
   );
@@ -217,12 +218,21 @@ export function CompareExplorer({
         </div>
       )}
 
-      <p className="font-mono text-[11px] leading-5 text-ink2">
-        — not measured / not published · <ValueFootnote /> · est. monthly ={" "}
-        {scenario.requestsPerDay.toLocaleString("en-US")} req/day × {scenario.inputTokens.toLocaleString("en-US")} in
-        / {scenario.outputTokens.toLocaleString("en-US")} out tokens
-        {scenario.cachePct > 0 ? ` · ${scenario.cachePct}% cached input` : ""} × 30 days.
-      </p>
+      {ready ? (
+        <p className="font-mono text-[11px] leading-5 text-ink2">
+          — not measured / not published · <ValueFootnote /> · est. monthly ={" "}
+          {scenario.requestsPerDay.toLocaleString("en-US")} req/day ×{" "}
+          {scenario.inputTokens.toLocaleString("en-US")} in / {scenario.outputTokens.toLocaleString("en-US")} out
+          tokens
+          {scenario.cachePct > 0 ? ` · ${scenario.cachePct}% cached input` : ""} × 30 days ·{" "}
+          <Link
+            href={`/calculators/cost?rpd=${scenario.requestsPerDay}&in=${scenario.inputTokens}&out=${scenario.outputTokens}${scenario.cachePct > 0 ? `&cache=${scenario.cachePct}` : ""}`}
+            className="text-ink underline underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline"
+          >
+            estimate with your traffic →
+          </Link>
+        </p>
+      ) : null}
     </div>
   );
 }

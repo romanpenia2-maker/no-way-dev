@@ -6,6 +6,7 @@ const links = [
   { href: "/calculators/cost", label: "Cost Calculator" },
   { href: "/ai-detector", label: "AI Detector" },
   { href: "/guides", label: "Guides" },
+  { href: "/grip", label: "Grip" },
   { href: "/methodology", label: "Methodology" },
   { href: "/about", label: "About" },
   { href: "/sitemap.xml", label: "Sitemap" },
@@ -18,9 +19,6 @@ export function Footer() {
         <div className="space-y-2">
           <p className="font-display text-lg font-extrabold lowercase leading-none tracking-[-0.03em]">
             no-way.dev
-          </p>
-          <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink2">
-            concept P «E-ink»
           </p>
           <p className="max-w-xs pt-2 text-sm text-ink2">
             Weekly-updated AI API pricing, verified against official sources. Every number has a source.
@@ -42,8 +40,10 @@ export function Footer() {
       </div>
       <div className="border-t border-line">
         <div className="flex flex-col gap-1 px-4 py-4 font-mono text-[11px] tracking-[0.04em] text-ink2 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-12">
-          <span>© {new Date().getFullYear()} {site.name} · dataset CC BY-SA · sample data — verify on official pages</span>
-          <span>not sponsored · data weekly</span>
+          <span>
+            © {new Date().getFullYear()} {site.name} · dataset CC BY-SA · not sponsored
+          </span>
+          <span className="font-bold text-ink">sample data — verify on official pages</span>
         </div>
       </div>
     </footer>

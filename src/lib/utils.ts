@@ -15,10 +15,14 @@ export function formatOrdinal(index: number): string {
   return String(index + 1).padStart(2, "0");
 }
 
-/** Format a USD price per 1M tokens, e.g. 1.25 -> "$1.25", 0.075 -> "$0.075" */
+/**
+ * Format a USD price per 1M tokens, e.g. 1.25 -> "$1.25", 0.075 -> "$0.075".
+ * Sub-dollar prices always use 3 decimals so cached/input rates align in
+ * tables ("$0.500", not a mix of "$0.5" and "$0.022").
+ */
 export function formatPricePer1M(value: number): string {
   if (value >= 1) return `$${value.toFixed(2)}`;
-  return `$${value.toFixed(3).replace(/0+$/, "").replace(/\.$/, ".0")}`;
+  return `$${value.toFixed(3)}`;
 }
 
 /** Format a USD amount, e.g. 1234.5 -> "$1,234.50" */

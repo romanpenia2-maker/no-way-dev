@@ -3,6 +3,8 @@
  * and the client table (hydration + router.replace sync). No node builtins.
  */
 
+// The per-row "Updated" column was removed in Phase A (identical date in every
+// row — visual noise); freshness is stated once below the table instead.
 export const PRICING_SORT_KEYS = [
   "model",
   "provider",
@@ -10,7 +12,6 @@ export const PRICING_SORT_KEYS = [
   "cached",
   "output",
   "context",
-  "updated",
 ] as const;
 export type PricingSortKey = (typeof PRICING_SORT_KEYS)[number];
 

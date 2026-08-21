@@ -9,6 +9,7 @@ import {
 import { getAllPriceRows } from "@/lib/data/models";
 import { getProviderNameMap } from "@/lib/data/providers";
 import { first } from "@/lib/search-params";
+import { formatDate } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "LLM API Pricing — all models, all providers",
@@ -49,6 +50,7 @@ export default async function PricingPage({ searchParams }: Props) {
   const ctx = rawCtx && rawCtx in CTX_MIN_OPTIONS ? rawCtx : DEFAULT_PRICING_STATE.ctx;
 
   const initial: PricingTableState = { sortKey, sortAsc, provider, capability, openOnly, ctx };
+  const lastVerified = rows.map((r) => r.updatedAt).sort().at(-1);
 
   return (
     <div className="w-full px-4 py-12 sm:px-6 lg:px-12">
@@ -58,12 +60,16 @@ export default async function PricingPage({ searchParams }: Props) {
           API pricing
         </h1>
         <p className="text-[15px] leading-7 text-ink2">
-          {rows.length} pricing entries across {new Set(rows.map((r) => r.modelSlug)).size} models. Prices in USD
-          per 1M tokens. Sort by any column; every row links back to the official source. The URL mirrors the
-          current sort and filters — share it to share the view.
+          {new Set(rows.map((r) => r.modelSlug)).size} models · USD per 1M tokens · verified weekly. Sort by any
+          column — the URL mirrors the view, share it to share it.
         </p>
       </div>
       <PricingTable rows={rows} providerNames={getProviderNameMap()} initial={initial} />
+      {lastVerified ? (
+        <p className="mt-3 font-mono text-[11px] text-ink2 nums">
+          All rows verified {formatDate(lastVerified)} · every number links to its official source.
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -12,7 +12,7 @@ import {
   isArenaCategory,
 } from "@/lib/data/benchmarks";
 import { getAllModels } from "@/lib/data/models";
-import { formatCompact, formatDate } from "@/lib/utils";
+
 import { breadcrumbJsonLd, JsonLd } from "@/lib/seo/jsonld";
 import { site } from "@/lib/site";
 import type { ArenaCategory } from "@data/schemas/model.schema";
@@ -150,72 +150,19 @@ export default async function BenchmarksPage({ searchParams }: Props) {
         </div>
       </section>
 
-      {/* Sources & methodology */}
+      {/* Sources & methodology — the link farm moved to /methodology (Phase A) */}
       <section className="border-b border-line py-12">
-        <h2 className="mb-6 font-display text-2xl font-bold uppercase leading-[0.94] tracking-[-0.02em]">
-          Sources &amp; methodology
-        </h2>
-        <div className="grid gap-8 sm:grid-cols-2">
-          <div className="space-y-2 border-t border-ink pt-3">
-            <span className="font-mono text-xs font-bold text-ink2 nums">01</span>
-            <h3 className="font-semibold">Arena ratings</h3>
-            <p className="text-sm leading-6 text-ink2">
-              Six LMArena leaderboards, snapshots taken {snapshotRange}. Arena Elo measures human preference, not
-              benchmark accuracy — a model can top one board and lag on another. Boards:
-            </p>
-            <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-ink2">
-              {ARENA_CATEGORY_ORDER.map((cat) => {
-                const c = meta.categories[cat];
-                return (
-                  <li key={cat}>
-                    <a
-                      href={c.sourceUrl}
-                      rel="noopener nofollow"
-                      className="font-mono text-xs underline underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline"
-                    >
-                      {c.label} ↗
-                    </a>{" "}
-                    — {formatCompact(c.votes)} votes, {c.totalModels} models, snapshot {formatDate(c.snapshotAt)}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-          <div className="space-y-2 border-t border-ink pt-3">
-            <span className="font-mono text-xs font-bold text-ink2 nums">02</span>
-            <h3 className="font-semibold">Every number has a source</h3>
-            <p className="text-sm leading-6 text-ink2">
-              Benchmark scores are official vendor publications unless flagged <sup className="font-bold">†</sup>.
-              Per-model source links:
-            </p>
-            <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-ink2">
-              {models.map((m) => {
-                const urls = m.benchmarks?.length
-                  ? [...new Set(m.benchmarks.map((b) => b.sourceUrl))]
-                  : [m.pricing[0].sourceUrl];
-                return (
-                  <li key={m.slug}>
-                    <Link href={`/models/${m.slug}`} className="font-semibold text-ink underline-offset-4 hover:underline">
-                      {m.name}
-                    </Link>
-                    :{" "}
-                    {urls.map((url, i) => (
-                      <span key={url}>
-                        <a
-                          href={url}
-                          rel="noopener nofollow"
-                          className="font-mono text-xs underline underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline"
-                        >
-                          {new URL(url).hostname.replace(/^www\./, "")} ↗
-                        </a>
-                        {i < urls.length - 1 ? ", " : ""}
-                      </span>
-                    ))}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+        <div className="flex flex-col gap-3 border border-line p-4 text-sm text-ink2 sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            Snapshots {snapshotRange}. Every score links to its official source on the model page; vendor-run
+            figures are flagged <sup className="font-bold">†</sup>. How we collect and verify the data:
+          </span>
+          <Link
+            href="/methodology"
+            className="shrink-0 font-mono text-xs uppercase tracking-[0.08em] text-ink hover:underline hover:underline-offset-4"
+          >
+            Methodology &amp; sources →
+          </Link>
         </div>
       </section>
 

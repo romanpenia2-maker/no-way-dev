@@ -1,5 +1,5 @@
 import type { DetectorThresholds } from "@data/schemas/detector.schema";
-import { getLogprobProvider, fetchEchoLogprobs, meanLogprobInRange, MAX_SCORE_CHARS } from "./llm";
+import { getLogprobProvider, fetchEchoLogprobs, meanLogprobInRange, documentMeanLogprob, MAX_SCORE_CHARS } from "./llm";
 import { bootstrapCi, calibrateScore, clamp01, mean, splitIntoSpans } from "./spans";
 import type { SpanScore } from "./types";
 
@@ -19,19 +19,23 @@ import type { SpanScore } from "./types";
  * SMOKE-TEST TODO: verify echo-logprobs on the live provider and re-fit
  * midpoint/scale on a calibration corpus before trusting the zones.
  *
- * Model pairs verified against the DeepInfra catalog (GET /models/list) on
- * 2026-08-20. The base Llama-3.1-8B is no longer hosted, so the text pair uses
- * two different families as performer/observer (valid for cross-perplexity).
+ * Model pairs verified live against DeepInfra on 2026-08-21: only models that
+ * still return echo logprobs on /v1/openai/completions are usable. Llama-3.1-8B
+ * and Qwen3.5-9B pass; Qwen2.5-* names redirect to Qwen3 without logprobs.
  */
 
 const MODEL_PAIRS: Record<"text" | "code", { performer: string; observer: string }> = {
   text: {
     performer: "meta-llama/Meta-Llama-3.1-8B-Instruct",
-    observer: "Qwen/Qwen2.5-7B-Instruct",
+    observer: "Qwen/Qwen3.5-9B",
   },
+  // Same verified pair for code: the Qwen2.5-Coder models are deprecated and
+  // DeepInfra redirects them to Qwen3 served WITHOUT echo logprobs (verified
+  // live 2026-08-21). Cross-perplexity with two general models is valid for
+  // code too; revisit when a code model with logprobs is available.
   code: {
-    performer: "Qwen/Qwen2.5-Coder-7B",
-    observer: "Qwen/Qwen2.5-Coder-32B-Instruct",
+    performer: "meta-llama/Meta-Llama-3.1-8B-Instruct",
+    observer: "Qwen/Qwen3.5-9B",
   },
 };
 
@@ -94,11 +98,22 @@ export async function runZeroshot(
       return { state: "error", detail: "Provider returned logprobs that do not align with spans." };
     }
 
+    // Verdict probability: sigmoid of the DOCUMENT-level ratio, not the mean of
+    // per-sentence sigmoids — sentence fragments are too noisy at scale=14 and
+    // the mean-of-sigmoids skewed human texts toward AI (observed 2026-08-21).
+    // Per-span scores stay for UI highlighting only.
+    const docA = documentMeanLogprob(a.tokens);
+    const docB = documentMeanLogprob(b.tokens);
+    if (docA === null || docB === null) {
+      return { state: "error", detail: "Provider returned no usable document logprobs." };
+    }
+    const docRatio = -docA / Math.max(-docB, 1e-6);
+    const probability = clamp01(calibrateScore(docRatio, calibration.scoreMidpoint, calibration.scoreScale));
     const values = spanScores.map((s) => s.score);
     return {
       state: "ok",
       provider: provider.name,
-      probability: clamp01(mean(values)),
+      probability,
       ci: bootstrapCi(values, thresholds.bootstrap.resamples, thresholds.bootstrap.ciLevel),
       spans: spanScores,
       truncated,
