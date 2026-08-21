@@ -75,4 +75,8 @@ jobs:
           git config user.email "bot@no-way.dev"
           git add docs/ux-maps/schemes
           git commit -m "chore(ux): regenerate detector state map"
+          # checkout persists an Authorization extraheader for the default
+          # GITHUB_TOKEN, which overrides URL-embedded credentials — drop it
+          # so the bot PAT in the URL is what git actually sends.
+          git config --local --unset-all http.https://github.com/.extraheader || true
           git push "https://x-access-token:${BOT_TOKEN}@github.com/romanpenia2-maker/no-way-dev.git" HEAD:rc
