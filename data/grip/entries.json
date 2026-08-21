@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "id": "gmt2zkzihohzc",
+    "name": "Roman",
+    "kg": 90.9,
+    "createdAt": "2026-08-21T13:29:55.913Z",
+    "source": "photo-ai",
+    "photoPath": "data/grip/photos/gmt2zkzihohzc.jpg"
+  }
+]
