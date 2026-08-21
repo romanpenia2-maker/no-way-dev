@@ -30,6 +30,7 @@ Read this file before any work. Product context: `PROJECT_CONTEXT.md`. Ops incid
 - Design: E-ink monochrome tokens only (`--paper`, `--px`, `--px2`, `--line`, `--backdrop`); fonts Archivo/Inter/JetBrains Mono; NO dark theme, NO colors beyond tokens; hover = ink inversion; `tabular-nums` for numbers.
 - Components read data only via `src/lib/data/*`. Prices in USD per 1M tokens, formatted via `src/lib/utils.ts`.
 - No new dependencies without justification in the PR. Don't break public URLs (slug change = redirect + note in PR).
+- Every feature ships with a live state map under /dev/* (fixture-rendered previews, anchor links per state); see /dev/detector-map and docs/ux-maps/.
 
 ## Agent workflow
 

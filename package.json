@@ -10,7 +10,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "validate-data": "tsx scripts/validate-data.ts",
-    "update-prices": "tsx scripts/bots/update-prices.ts"
+    "update-prices": "tsx scripts/bots/update-prices.ts",
+    "regen:detector-map": "node scripts/dev/regen-detector-map.mjs"
   },
   "dependencies": {
     "@contentauth/c2pa-web": "0.14.3",
@@ -31,6 +32,7 @@
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.1.6",
+    "playwright": "^1.62.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.19.2",

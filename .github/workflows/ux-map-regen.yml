@@ -1,0 +1,82 @@
+name: UX map regen (detector)
+
+# Regenerates docs/ux-maps/schemes/* (24 state PNGs + scheme.png) from the live
+# /dev/detector-map page whenever rc changes outside the schemes directory.
+# The bot's own regen commits are excluded via paths-ignore + the anti-loop
+# guard below.
+
+on:
+  push:
+    branches: [rc]
+    paths-ignore:
+      - "docs/ux-maps/schemes/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ux-map-regen-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  regen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rc
+
+      # Anti-loop: never regen on top of our own regen commit.
+      - name: Anti-loop guard
+        id: guard
+        run: |
+          msg="$(git log -1 --pretty=%s)"
+          echo "HEAD commit: $msg"
+          if [[ "$msg" == chore\(ux\):\ regenerate* ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.guard.outputs.skip == 'false'
+        with:
+          node-version: 24
+          cache: npm
+
+      # Runner images ship an npm with a known bug that intermittently breaks
+      # `npm ci`; upgrading npm first makes installs deterministic (docs/adr/0003).
+      - name: Update npm (fix runner npm bug)
+        if: steps.guard.outputs.skip == 'false'
+        run: npm install --global npm@latest
+
+      - name: Install dependencies
+        if: steps.guard.outputs.skip == 'false'
+        run: npm ci --no-audit --no-fund
+
+      - name: Install chromium for playwright
+        if: steps.guard.outputs.skip == 'false'
+        run: npx playwright install --with-deps chromium
+
+      - name: Regenerate detector state map
+        if: steps.guard.outputs.skip == 'false'
+        run: npm run regen:detector-map
+
+      - name: Commit regenerated map (if changed)
+        if: steps.guard.outputs.skip == 'false'
+        env:
+          BOT_TOKEN: ${{ secrets.GH_BOT_TOKEN }}
+        run: |
+          if git diff --quiet -- docs/ux-maps/schemes; then
+            echo "map unchanged — nothing to commit"
+            exit 0
+          fi
+          git config user.name "no-way-bot"
+          git config user.email "bot@no-way.dev"
+          git add docs/ux-maps/schemes
+          git commit -m "chore(ux): regenerate detector state map"
+          # checkout persists an Authorization extraheader for the default
+          # GITHUB_TOKEN, which overrides URL-embedded credentials — drop it
+          # so the bot PAT in the URL is what git actually sends.
+          git config --local --unset-all http.https://github.com/.extraheader || true
+          git push "https://x-access-token:${BOT_TOKEN}@github.com/romanpenia2-maker/no-way-dev.git" HEAD:rc
