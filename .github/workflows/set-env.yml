@@ -8,26 +8,25 @@ permissions: {}
 jobs:
   set-env:
     runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      DEEPINFRA_API_KEY: ${{ secrets.DEEPINFRA_API_KEY }}
+      SIGHTENGINE_USER: ${{ secrets.SIGHTENGINE_USER }}
+      SIGHTENGINE_SECRET: ${{ secrets.SIGHTENGINE_SECRET }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-      - name: Link project
-        run: vercel link --yes --token=${{ secrets.VERCEL_TOKEN }}
-      - name: Add env vars (production + preview)
-        env:
-          DEEPINFRA_API_KEY: ${{ secrets.DEEPINFRA_API_KEY }}
-          SIGHTENGINE_USER: ${{ secrets.SIGHTENGINE_USER }}
-          SIGHTENGINE_SECRET: ${{ secrets.SIGHTENGINE_SECRET }}
+      - name: Upsert env vars via Vercel REST API
         run: |
           set -e
-          for ENV in production preview; do
-            printf '%s' "$DEEPINFRA_API_KEY"   | vercel env add DEEPINFRA_API_KEY   $ENV --force --token=${{ secrets.VERCEL_TOKEN }}
-            printf '%s' "$SIGHTENGINE_USER"    | vercel env add SIGHTENGINE_USER    $ENV --force --token=${{ secrets.VERCEL_TOKEN }}
-            printf '%s' "$SIGHTENGINE_SECRET"  | vercel env add SIGHTENGINE_SECRET  $ENV --force --token=${{ secrets.VERCEL_TOKEN }}
-          done
-      - name: Verify (names only, values masked)
-        run: vercel env ls --token=${{ secrets.VERCEL_TOKEN }} | grep -E 'DEEPINFRA|SIGHTENGINE' || true
+          PROJ=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v9/projects/no-way-dev" | python3 -c "import sys,json;print(json.load(sys.stdin)['id'])")
+          echo "project: $PROJ"
+          upsert() {
+            local KEY="$1" VAL="$2"
+            EXISTING=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v10/projects/$PROJ/env"               | python3 -c "import sys,json;print('\n'.join(e['id'] for e in json.load(sys.stdin).get('envs',[]) if e['key']=='$KEY' and 'preview' in e.get('target',[])))")
+            for EID in $EXISTING; do
+              curl -s -X DELETE -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v10/projects/$PROJ/env/$EID" > /dev/null
+            done
+            curl -s -X POST -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json"               -d "{"key":"$KEY","value":"$VAL","type":"sensitive","target":["preview"]}"               "https://api.vercel.com/v10/projects/$PROJ/env?upsert=true" | python3 -c "import sys,json;d=json.load(sys.stdin);print('$KEY preview ->', 'created' if 'created' in json.dumps(d) else list(d)[:3])"
+          }
+          upsert DEEPINFRA_API_KEY "$DEEPINFRA_API_KEY"
+          upsert SIGHTENGINE_USER "$SIGHTENGINE_USER"
+          upsert SIGHTENGINE_SECRET "$SIGHTENGINE_SECRET"
