@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CompareExplorer, MAX_COMPARE, type CompareModel, type CompareScenario } from "@/components/compare-explorer";
+import { CompareExplorer, type CompareModel, type CompareScenario } from "@/components/compare-explorer";
 import { ARENA_CATEGORY_ORDER, getBenchmarksMeta } from "@/lib/data/benchmarks";
 import { getAllModels, getCheapestEntry } from "@/lib/data/models";
 import { getProviderName } from "@/lib/data/providers";
@@ -13,6 +13,12 @@ interface Props {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
+// NOTE: MAX_COMPARE/MIN_COMPARE are NOT imported here — compare-explorer.tsx is
+// a "use client" module, so its value exports compile to client-reference
+// proxies in this server component (slice(0, proxy) silently yields []).
+const MAX_COMPARE_SLUGS = 4;
+const DEFAULT_COMPARE_COUNT = 2;
+
 function parseSlugs(raw: string | undefined): string[] {
   if (!raw) return [];
   const valid = new Set(getAllModels().map((m) => m.slug));
@@ -20,7 +26,7 @@ function parseSlugs(raw: string | undefined): string[] {
   for (const part of raw.split(",")) {
     const slug = part.trim();
     if (valid.has(slug) && !out.includes(slug)) out.push(slug);
-    if (out.length >= MAX_COMPARE) break;
+    if (out.length >= MAX_COMPARE_SLUGS) break;
   }
   return out;
 }
@@ -86,7 +92,15 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
 export default async function ComparePage({ searchParams }: Props) {
   const sp = await searchParams;
-  const slugs = parseSlugs(first(sp.models));
+  // Prefill with the first two models from the dataset so the page is useful
+  // with zero clicks. An explicit (even empty) ?models= param always wins —
+  // that is how the explorer signals "user unselected everything".
+  const slugs =
+    first(sp.models) === undefined
+      ? getAllModels()
+          .slice(0, DEFAULT_COMPARE_COUNT)
+          .map((m) => m.slug)
+      : parseSlugs(first(sp.models));
   const scenario = parseScenario(sp);
   const models = buildCompareModels(slugs, scenario);
   const meta = getBenchmarksMeta();
@@ -126,7 +140,7 @@ export default async function ComparePage({ searchParams }: Props) {
         </h1>
         <p className="text-[15px] leading-7 text-ink2">
           {picker.length} frontier models, side by side: prices per 1M tokens, context, six arena boards, top
-          benchmarks and value score. Pick {2}–{MAX_COMPARE} models — the URL is the comparison.
+          benchmarks and value score. Pick 2–{MAX_COMPARE_SLUGS} models — the URL is the comparison.
         </p>
       </div>
 
