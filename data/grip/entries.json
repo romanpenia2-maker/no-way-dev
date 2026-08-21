@@ -3,8 +3,16 @@
     "id": "gmt2zkzihohzc",
     "name": "Roman",
     "kg": 90.9,
+    "photoPath": "data/grip/photos/gmt2zkzihohzc.jpg",
     "createdAt": "2026-08-21T13:29:55.913Z",
+    "source": "photo-ai"
+  },
+  {
+    "id": "gmt2zn16gwaor",
+    "name": "Adr Yakimashenko",
+    "kg": 45.6,
+    "createdAt": "2026-08-21T13:31:31.384Z",
     "source": "photo-ai",
-    "photoPath": "data/grip/photos/gmt2zkzihohzc.jpg"
+    "photoPath": "data/grip/photos/gmt2zn16gwaor.jpg"
   }
 ]
