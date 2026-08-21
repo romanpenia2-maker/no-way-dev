@@ -41,9 +41,14 @@ jobs:
               uid = u["update_id"]; max_id = max(max_id, uid)
               m = u.get("message") or {}
               chat = str(m.get("chat", {}).get("id", ""))
-              text = (m.get("text") or "").strip()
-              if chat != OWNER or not text:
-                  continue  # только владелец, только текст
+              if chat != OWNER:
+                  continue  # только владелец
+              text = (m.get("text") or m.get("caption") or "").strip()
+              has_media = any(k in m for k in ("photo", "document", "video", "audio", "voice", "sticker"))
+              if not text and has_media:
+                  text = "[вложение без текста — бот не читает файлы/фото; перешли содержимое обычным текстом]"
+              if not text:
+                  continue
 
               if text.startswith("/start"):
                   reply = ("🤖 no-way.dev пульт.\n\nПросто напиши идею текстом — создам issue с label `idea`.\n"
