@@ -13,6 +13,8 @@ jobs:
       DEEPINFRA_API_KEY: ${{ secrets.DEEPINFRA_API_KEY }}
       SIGHTENGINE_USER: ${{ secrets.SIGHTENGINE_USER }}
       SIGHTENGINE_SECRET: ${{ secrets.SIGHTENGINE_SECRET }}
+      SIGHTENGINE_API_USER: ${{ secrets.SIGHTENGINE_USER }}
+      SIGHTENGINE_API_SECRET: ${{ secrets.SIGHTENGINE_SECRET }}
     steps:
       - name: Upsert env vars via Vercel REST API
         run: |
@@ -33,7 +35,7 @@ jobs:
           print("project:", pid)
 
           envs = api("GET", f"/v10/projects/{pid}/env").get("envs", [])
-          for key in ("DEEPINFRA_API_KEY", "SIGHTENGINE_USER", "SIGHTENGINE_SECRET"):
+          for key in ("DEEPINFRA_API_KEY", "SIGHTENGINE_USER", "SIGHTENGINE_SECRET", "SIGHTENGINE_API_USER", "SIGHTENGINE_API_SECRET"):
               val = os.environ[key]
               for e in [e for e in envs if e.get("key") == key and "preview" in (e.get("target") or [])]:
                   api("DELETE", f"/v10/projects/{pid}/env/{e['id']}")
