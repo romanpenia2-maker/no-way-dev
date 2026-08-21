@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <title>/ai-detector — scheme</title>
+    <style>
+      /*
+       * scheme-template.html — filled by scripts/dev/regen-detector-map.mjs:
+       * the STATE_IMAGES marker in the inline script below is replaced with the
+       * base64 screenshots, then chromium renders this file at 2328px →
+       * docs/ux-maps/schemes/scheme.png.
+       * E-ink palette only: #e7e8e2 paper, #1b1b16 ink, #55554c ink2, #c9cac0 line.
+       */
+      :root {
+        --paper: #e7e8e2;
+        --ink: #1b1b16;
+        --ink2: #55554c;
+        --line: #c9cac0;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html { background: var(--paper); }
+      body {
+        width: 2328px;
+        padding: 44px 44px 52px;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: Arial, "Helvetica Neue", Helvetica, "DejaVu Sans", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .mono { font-family: "JetBrains Mono", "DejaVu Sans Mono", Consolas, monospace; }
+
+      h1 {
+        font-size: 36px;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        margin-bottom: 40px;
+      }
+      .level-label {
+        font-family: "JetBrains Mono", "DejaVu Sans Mono", Consolas, monospace;
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink2);
+        margin: 34px 0 18px;
+      }
+
+      /* --- level 1: if-else overview --------------------------------------- */
+      .flow {
+        display: flex;
+        align-items: stretch;
+        gap: 14px;
+      }
+      .box {
+        flex: 1 1 0;
+        border: 2px solid var(--ink);
+        background: var(--paper);
+        padding: 16px 18px 18px;
+      }
+      .box h2 {
+        font-family: "JetBrains Mono", "DejaVu Sans Mono", Consolas, monospace;
+        font-size: 21px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        margin-bottom: 4px;
+      }
+      .box .sub {
+        font-size: 16px;
+        color: var(--ink2);
+        margin-bottom: 12px;
+      }
+      .box ul { list-style: none; }
+      .box li {
+        font-size: 16.5px;
+        line-height: 1.45;
+        padding-left: 16px;
+        position: relative;
+        margin-bottom: 7px;
+      }
+      .box li::before {
+        content: "·";
+        position: absolute;
+        left: 2px;
+        font-weight: 700;
+      }
+      .box li b { font-family: "JetBrains Mono", "DejaVu Sans Mono", Consolas, monospace; font-weight: 700; }
+      .arrow {
+        align-self: center;
+        font-size: 30px;
+        font-weight: 700;
+        color: var(--ink);
+        flex: 0 0 auto;
+      }
+
+      /* --- level 2: 4×6 state grid ------------------------------------------ */
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 22px;
+      }
+      .card {
+        border: 2px solid var(--ink);
+        background: var(--paper);
+        display: flex;
+        flex-direction: column;
+      }
+      .card header { padding: 12px 14px 10px; }
+      .card .sid {
+        font-family: "JetBrains Mono", "DejaVu Sans Mono", Consolas, monospace;
+        font-size: 21px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+      .card .cap {
+        font-size: 15.5px;
+        line-height: 1.35;
+        color: var(--ink2);
+        margin-top: 3px;
+      }
+      .card img {
+        display: block;
+        width: 100%;
+        border-top: 1px solid var(--line);
+        background: var(--paper);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>V3 · /ai-detector — два уровня: логика ветвления + все 24 экрана</h1>
+
+    <p class="level-label">Уровень 1 — обзор if-else (без скриншотов)</p>
+    <div class="flow">
+      <section class="box">
+        <h2>1. ВХОД</h2>
+        <p class="sub">ничего не введено / диплинк ?kind=</p>
+        <ul>
+          <li>пусто, 1-й визит → <b>S-EMPTY-FIRST</b></li>
+          <li>пусто, вернувшийся → <b>S-EMPTY-RETURN</b></li>
+        </ul>
+      </section>
+      <div class="arrow">→</div>
+      <section class="box">
+        <h2>2. ГЕЙТЫ ВВОДА (клиент)</h2>
+        <p class="sub">submit заблокирован до прохождения</p>
+        <ul>
+          <li>text 1–149 слов → <b>S-GATE-SHORT-TEXT</b></li>
+          <li>text &gt;20 000 слов → <b>S-GATE-LONG-TEXT</b></li>
+          <li>code 1–39 строк → <b>S-GATE-SHORT-CODE</b></li>
+          <li>code &gt;50 000 симв. → <b>S-GATE-LONG-CODE</b></li>
+          <li>img &gt;8 MB → <b>S-IMG-TOO-BIG</b></li>
+          <li>img не PNG/JPEG/битый → <b>S-IMG-BAD-FORMAT</b></li>
+        </ul>
+      </section>
+      <div class="arrow">→</div>
+      <section class="box">
+        <h2>3. IMAGE: C2PA ЛОКАЛЬНО</h2>
+        <p class="sub">WASM в браузере, API не вызывается</p>
+        <ul>
+          <li>чтение → <b>S-IMG-C2PA-LOADING</b></li>
+          <li>valid + AI claim → <b>S-IMG-C2PA-AI</b></li>
+          <li>valid, без AI claim → <b>S-IMG-C2PA-NOAI</b></li>
+          <li>invalid → <b>S-IMG-C2PA-INVALID</b> → «Check anyway» → п.4</li>
+          <li>нет манифеста / WASM упал → п.4</li>
+        </ul>
+      </section>
+      <div class="arrow">→</div>
+      <section class="box">
+        <h2>4. СЕРВЕР /api/detect</h2>
+        <p class="sub">zeroshot + external + provenance</p>
+        <ul>
+          <li>429 → <b>S-RATE-LIMIT</b> (таймер, вход сохранён)</li>
+          <li>сеть / 5xx → <b>S-NETWORK-ERR</b> (Retry)</li>
+          <li>нет ML и нет ext → <b>S-NO-ML</b></li>
+          <li>только external → <b>S-EXT-ONLY</b></li>
+          <li>граничный p + Sapling → <b>S-RES-BORDERLINE-EXT</b></li>
+          <li>img: нет сигналов → <b>S-IMG-NO-SIGNALS</b></li>
+        </ul>
+      </section>
+      <div class="arrow">→</div>
+      <section class="box">
+        <h2>5. ВЕРДИКТ ПО p</h2>
+        <p class="sub">все слои ok</p>
+        <ul>
+          <li>p ≥ 0.80 → <b>S-RES-CONF-AI</b></li>
+          <li>0.55 ≤ p &lt; 0.80 → <b>S-RES-LIKELY-AI</b></li>
+          <li>0.20 &lt; p &lt; 0.55 → <b>S-RES-ABSTAIN</b></li>
+          <li>p ≤ 0.45 симм. → <b>S-RES-LIKELY-HUMAN</b></li>
+          <li>p ≤ 0.20 → <b>S-RES-CONF-HUMAN</b></li>
+          <li>правка входа потом → <b>S-RES-STALE-GUARD</b></li>
+        </ul>
+      </section>
+    </div>
+
+    <p class="level-label">Уровень 2 — все 24 терминальных состояния (живые рендеры компонентов на фикстурах)</p>
+    <div class="grid" id="grid"></div>
+
+    <script>
+      /*__STATE_IMAGES__*/
+
+      // Caption per state (RU, one line) — keep in sync with docs/ux-maps/detector.md §1.1.
+      var CAPTIONS = {
+        "S-EMPTY-FIRST": "первый визит, таб Text, ориентация развёрнута",
+        "S-EMPTY-RETURN": "возвращающийся, ориентация свёрнута",
+        "S-GATE-SHORT-TEXT": "1–149 слов: submit недоступен, счётчик объясняет",
+        "S-GATE-LONG-TEXT": ">20 000 слов: submit недоступен",
+        "S-GATE-SHORT-CODE": "1–39 непустых строк: submit недоступен",
+        "S-GATE-LONG-CODE": ">50 000 символов: submit недоступен",
+        "S-IMG-TOO-BIG": "файл > 8 МБ — честный отказ, превью не создаётся",
+        "S-IMG-BAD-FORMAT": "не PNG/JPEG или битый файл",
+        "S-IMG-C2PA-LOADING": "WASM ~11 МБ грузится, чтение подписи локально",
+        "S-IMG-C2PA-AI": "подпись valid + AI claim — API не вызывается",
+        "S-IMG-C2PA-NOAI": "подпись valid, без AI claim (камера и т.п.)",
+        "S-IMG-C2PA-INVALID": "подпись битая + CTA «Check anyway»",
+        "S-IMG-NO-SIGNALS": "нет метаданных + Sightengine не настроен",
+        "S-RES-CONF-AI": "p ≥ 0.80 — solid-бейдж, сильный сигнал",
+        "S-RES-LIKELY-AI": "0.55 ≤ p < 0.80 — outline-бейдж",
+        "S-RES-ABSTAIN": "0.20 < p < 0.55 — отказ от вердикта + как выйти из зоны",
+        "S-RES-LIKELY-HUMAN": "p ≤ 0.45 (симм.) — outline",
+        "S-RES-CONF-HUMAN": "p ≤ 0.20 — solid",
+        "S-RES-BORDERLINE-EXT": "граничный p + Sapling, CI честно расширен",
+        "S-NO-ML": "нет ML-ключей и внешнего детектора — вердикт невозможен",
+        "S-EXT-ONLY": "вердикт по одному внешнему сигналу",
+        "S-RATE-LIMIT": "HTTP 429 — карточка с таймером, вход сохранён",
+        "S-NETWORK-ERR": "сеть/5xx — карточка + Retry, вход сохранён",
+        "S-RES-STALE-GUARD": "правка входа после результата — вердикт сброшен",
+      };
+
+      // Grid order mirrors the canonical 4×6 layout.
+      var ORDER = [
+        "S-EMPTY-FIRST", "S-EMPTY-RETURN", "S-GATE-SHORT-TEXT", "S-GATE-LONG-TEXT",
+        "S-GATE-SHORT-CODE", "S-GATE-LONG-CODE", "S-IMG-TOO-BIG", "S-IMG-BAD-FORMAT",
+        "S-IMG-C2PA-LOADING", "S-IMG-C2PA-AI", "S-IMG-C2PA-NOAI", "S-IMG-C2PA-INVALID",
+        "S-IMG-NO-SIGNALS", "S-RES-CONF-AI", "S-RES-LIKELY-AI", "S-RES-ABSTAIN",
+        "S-RES-LIKELY-HUMAN", "S-RES-CONF-HUMAN", "S-RES-BORDERLINE-EXT", "S-NO-ML",
+        "S-EXT-ONLY", "S-RATE-LIMIT", "S-NETWORK-ERR", "S-RES-STALE-GUARD",
+      ];
+
+      var grid = document.getElementById("grid");
+      var pending = 0;
+      ORDER.forEach(function (id) {
+        var src = window.__STATE_IMAGES__ && window.__STATE_IMAGES__[id];
+        if (!src) throw new Error("missing screenshot for " + id);
+        var card = document.createElement("figure");
+        card.className = "card";
+        var head = document.createElement("header");
+        var sid = document.createElement("div");
+        sid.className = "sid";
+        sid.textContent = id;
+        var cap = document.createElement("div");
+        cap.className = "cap";
+        cap.textContent = CAPTIONS[id] || "";
+        head.appendChild(sid);
+        head.appendChild(cap);
+        var img = new Image();
+        pending += 1;
+        img.onload = img.onerror = function () {
+          pending -= 1;
+          if (pending === 0) window.__schemeReady = true;
+        };
+        img.src = src;
+        card.appendChild(head);
+        card.appendChild(img);
+        grid.appendChild(card);
+      });
+    </script>
+  </body>
+</html>
