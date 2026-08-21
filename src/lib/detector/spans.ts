@@ -91,9 +91,15 @@ export function mean(values: number[]): number {
   return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
-/** Sigmoid calibration: Binoculars-style score (lower = more AI-like) → probability. */
+/**
+ * Sigmoid calibration: cross-perplexity ratio (PPL_A / PPL_B) → AI probability.
+ * Empirical note (mini-calibration 2026-08-21, n=8, Llama-3.1-8B / Qwen3.5-9B):
+ * with public-API echo logprobs the ratio runs HIGHER for AI text (~1.42-1.51)
+ * than for human text (~0.99-1.04) — opposite sign to classic Binoculars — so
+ * the sigmoid increases with score. Re-fit on a proper corpus in v1.5.
+ */
 export function calibrateScore(score: number, midpoint: number, scale: number): number {
-  return clamp01(1 / (1 + Math.exp(scale * (score - midpoint))));
+  return clamp01(1 / (1 + Math.exp(-scale * (score - midpoint))));
 }
 
 export function emptySpans(): SpanScore[] {
