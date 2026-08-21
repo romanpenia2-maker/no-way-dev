@@ -19,19 +19,23 @@ import type { SpanScore } from "./types";
  * SMOKE-TEST TODO: verify echo-logprobs on the live provider and re-fit
  * midpoint/scale on a calibration corpus before trusting the zones.
  *
- * Model pairs verified against the DeepInfra catalog (GET /models/list) on
- * 2026-08-20. The base Llama-3.1-8B is no longer hosted, so the text pair uses
- * two different families as performer/observer (valid for cross-perplexity).
+ * Model pairs verified live against DeepInfra on 2026-08-21: only models that
+ * still return echo logprobs on /v1/openai/completions are usable. Llama-3.1-8B
+ * and Qwen3.5-9B pass; Qwen2.5-* names redirect to Qwen3 without logprobs.
  */
 
 const MODEL_PAIRS: Record<"text" | "code", { performer: string; observer: string }> = {
   text: {
     performer: "meta-llama/Meta-Llama-3.1-8B-Instruct",
-    observer: "Qwen/Qwen2.5-7B-Instruct",
+    observer: "Qwen/Qwen3.5-9B",
   },
+  // Same verified pair for code: the Qwen2.5-Coder models are deprecated and
+  // DeepInfra redirects them to Qwen3 served WITHOUT echo logprobs (verified
+  // live 2026-08-21). Cross-perplexity with two general models is valid for
+  // code too; revisit when a code model with logprobs is available.
   code: {
-    performer: "Qwen/Qwen2.5-Coder-7B",
-    observer: "Qwen/Qwen2.5-Coder-32B-Instruct",
+    performer: "meta-llama/Meta-Llama-3.1-8B-Instruct",
+    observer: "Qwen/Qwen3.5-9B",
   },
 };
 
