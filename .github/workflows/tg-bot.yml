@@ -58,7 +58,8 @@ jobs:
                   reply = "📋 Последние issues:\n" + out
               else:
                   # ответ на сообщение бота (reply) → issue с label "answer"; иначе — "idea"
-                  is_answer = m.get("reply_to_message") is not None
+                  import re as _re
+                  is_answer = (m.get("reply_to_message") is not None) or bool(_re.match(r"^(\d{1,2}|да|нет|ok|ок)$", text.strip(), _re.I))
                   label = "answer" if is_answer else "idea"
                   prefix = "answer" if is_answer else "idea"
                   title = text.split("\n")[0][:80]
