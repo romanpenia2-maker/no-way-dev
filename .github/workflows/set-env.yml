@@ -16,17 +16,28 @@ jobs:
     steps:
       - name: Upsert env vars via Vercel REST API
         run: |
-          set -e
-          PROJ=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v9/projects/no-way-dev" | python3 -c "import sys,json;print(json.load(sys.stdin)['id'])")
-          echo "project: $PROJ"
-          upsert() {
-            local KEY="$1" VAL="$2"
-            EXISTING=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v10/projects/$PROJ/env"               | python3 -c "import sys,json;print('\n'.join(e['id'] for e in json.load(sys.stdin).get('envs',[]) if e['key']=='$KEY' and 'preview' in e.get('target',[])))")
-            for EID in $EXISTING; do
-              curl -s -X DELETE -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v10/projects/$PROJ/env/$EID" > /dev/null
-            done
-            curl -s -X POST -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json"               -d "{"key":"$KEY","value":"$VAL","type":"sensitive","target":["preview"]}"               "https://api.vercel.com/v10/projects/$PROJ/env?upsert=true" | python3 -c "import sys,json;d=json.load(sys.stdin);print('$KEY ->', json.dumps(d)[:300])"
-          }
-          upsert DEEPINFRA_API_KEY "$DEEPINFRA_API_KEY"
-          upsert SIGHTENGINE_USER "$SIGHTENGINE_USER"
-          upsert SIGHTENGINE_SECRET "$SIGHTENGINE_SECRET"
+          python3 << 'PYEOF'
+          import json, os, urllib.request
+
+          T = os.environ["VERCEL_TOKEN"]
+          def api(method, path, payload=None):
+              req = urllib.request.Request(
+                  "https://api.vercel.com" + path, method=method,
+                  headers={"Authorization": "Bearer " + T, "Content-Type": "application/json"},
+                  data=json.dumps(payload).encode() if payload is not None else None)
+              with urllib.request.urlopen(req) as r:
+                  return json.load(r)
+
+          proj = api("GET", "/v9/projects/no-way-dev")
+          pid = proj["id"]
+          print("project:", pid)
+
+          envs = api("GET", f"/v10/projects/{pid}/env").get("envs", [])
+          for key in ("DEEPINFRA_API_KEY", "SIGHTENGINE_USER", "SIGHTENGINE_SECRET"):
+              val = os.environ[key]
+              for e in [e for e in envs if e.get("key") == key and "preview" in (e.get("target") or [])]:
+                  api("DELETE", f"/v10/projects/{pid}/env/{e['id']}")
+              res = api("POST", f"/v10/projects/{pid}/env?upsert=true",
+                        {"key": key, "value": val, "type": "sensitive", "target": ["preview"]})
+              print(key, "-> preview OK:", res.get("key"), res.get("target"))
+          PYEOF
