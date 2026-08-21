@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       image_path:
-        description: "Optional repo path to an image; sent via sendPhoto with text as caption"
+        description: "Optional repo path to an image; sent via sendDocument (full resolution, no TG compression) with text as caption"
         required: false
         type: string
         default: ""
@@ -31,12 +31,12 @@ jobs:
           IMG: ${{ inputs.image_path }}
           IMG_REF: ${{ inputs.image_ref != '' && inputs.image_ref || github.ref_name }}
         run: |
-          curl -sSfL -o photo.bin \
+          curl -sSfL -o doc.bin \
             -H "Authorization: Bearer $BOT_TOKEN" \
             -H "Accept: application/vnd.github.raw" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/repos/${{ github.repository }}/contents/$IMG?ref=$IMG_REF"
-          ls -la photo.bin
+          ls -la doc.bin
 
       - name: Send photo to owner TG panel
         if: ${{ inputs.image_path != '' }}
@@ -44,10 +44,12 @@ jobs:
           TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           OWNER_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
           TEXT: ${{ inputs.text }}
+          IMG: ${{ inputs.image_path }}
         run: |
-          curl -s -X POST "https://api.telegram.org/bot$TG_TOKEN/sendPhoto" \
+          fname=$(basename "$IMG")
+          curl -s -X POST "https://api.telegram.org/bot$TG_TOKEN/sendDocument" \
             -F "chat_id=$OWNER_CHAT" \
-            -F "photo=@photo.bin" \
+            -F "document=@doc.bin;filename=$fname" \
             -F "caption=$TEXT" > resp.json
           python3 -c "import json; d=json.load(open('resp.json')); print('telegram ok:', d.get('ok')); exit(0 if d.get('ok') else 1)"
 
