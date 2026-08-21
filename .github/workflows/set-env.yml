@@ -40,6 +40,6 @@ jobs:
               for e in [e for e in envs if e.get("key") == key and "preview" in (e.get("target") or [])]:
                   api("DELETE", f"/v10/projects/{pid}/env/{e['id']}")
               res = api("POST", f"/v10/projects/{pid}/env?upsert=true",
-                        {"key": key, "value": val, "type": "sensitive", "target": ["preview"]})
+                        {"key": key, "value": val, "type": "sensitive", "target": ["preview", "production"]})
               print(key, "-> preview OK:", res.get("key"), res.get("target"))
           PYEOF
