@@ -33,6 +33,11 @@ export const metadata: Metadata = {
     siteName: site.name,
     url: site.url,
   },
+  twitter: {
+    card: "summary_large_image",
+    title: site.title,
+    description: site.description,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

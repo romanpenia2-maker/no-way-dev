@@ -19,8 +19,10 @@
   * {
     @apply border-line;
   }
-  html {
-    scroll-behavior: smooth;
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
   }
   body {
     @apply bg-backdrop font-sans text-ink antialiased;
@@ -121,6 +123,24 @@
 .caveat:focus-within .caveat-tip {
   opacity: 1;
   visibility: visible;
+}
+
+/* Keep tooltips inside the viewport on narrow screens: anchor edge columns */
+@media (max-width: 640px) {
+  .caveat-tip {
+    max-width: calc(100vw - 3rem);
+  }
+  td:first-child .caveat-tip,
+  th:first-child .caveat-tip {
+    left: 0;
+    transform: none;
+  }
+  td:last-child .caveat-tip,
+  th:last-child .caveat-tip {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
 }
 
 /* Chevron rotation on expanded rows */

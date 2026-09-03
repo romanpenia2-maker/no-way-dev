@@ -93,7 +93,7 @@ export function RomaBenchmarkSection() {
 
         <div className="grid gap-8 lg:grid-cols-2">
           {/* Tasks */}
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink2">
               Tasks &amp; ground truth
             </h3>
@@ -109,7 +109,7 @@ export function RomaBenchmarkSection() {
           </div>
 
           {/* Performance */}
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink2">
               Latency &amp; tokens (single run, via gateway)
             </h3>

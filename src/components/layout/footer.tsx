@@ -3,6 +3,7 @@ import { site } from "@/lib/site";
 
 const links = [
   { href: "/pricing", label: "Pricing" },
+  { href: "/models", label: "Models" },
   { href: "/calculators/cost", label: "Cost Calculator" },
   { href: "/ai-detector", label: "AI Detector" },
   { href: "/guides", label: "Guides" },
@@ -28,12 +29,19 @@ export function Footer() {
           className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm sm:justify-items-end"
           aria-label="Footer"
         >
-          {links.map((l) => (
-            <Link key={l.href} href={l.href} className="py-1.5 text-ink2 underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline">
-              {l.label}
-            </Link>
-          ))}
-          <a href={site.github} rel="noopener" className="py-1.5 text-ink2 underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline">
+          {links.map((l) =>
+            l.href.endsWith(".xml") ? (
+              /* Non-App-Router assets: plain <a> — Next Link prefetch RSC-hits them and 500s */
+              <a key={l.href} href={l.href} className="py-1.5 text-ink2 underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline">
+                {l.label}
+              </a>
+            ) : (
+              <Link key={l.href} href={l.href} className="py-1.5 text-ink2 underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline">
+                {l.label}
+              </Link>
+            ),
+          )}
+          <a href={site.github} target="_blank" rel="noopener noreferrer" className="py-1.5 text-ink2 underline-offset-4 hover:bg-ink hover:text-paper hover:no-underline">
             GitHub
           </a>
         </nav>
