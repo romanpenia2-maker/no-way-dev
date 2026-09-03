@@ -117,7 +117,7 @@ export default async function BenchmarksPage({ searchParams }: Props) {
         <div className="mt-10 space-y-6">
           <div className="space-y-2 border-t border-ink pt-3">
             <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink2">
-              Caveats <sup className="font-bold">†</sup>
+              Caveats <sup className="font-bold">*</sup>
             </h3>
             <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-ink2">
               {caveats.map((c) => (
@@ -159,7 +159,7 @@ export default async function BenchmarksPage({ searchParams }: Props) {
         <div className="flex flex-col gap-3 border border-line p-4 text-sm text-ink2 sm:flex-row sm:items-center sm:justify-between">
           <span>
             Snapshots {snapshotRange}. Every score links to its official source on the model page; vendor-run
-            figures are flagged <sup className="font-bold">†</sup>. How we collect and verify the data:
+            figures are flagged <sup className="font-bold">*</sup>. How we collect and verify the data:
           </span>
           <Link
             href="/methodology"

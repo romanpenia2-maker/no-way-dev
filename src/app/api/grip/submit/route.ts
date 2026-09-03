@@ -141,6 +141,11 @@ export async function POST(request: Request) {
   if (name.length < 2) {
     return json({ error: "bad_request", message: "Name must be at least 2 visible characters." }, 400);
   }
+  // Require at least 2 actual letters — blocks markup-stripped junk like "alert(1)".
+  const letters = name.match(/\p{L}/gu) ?? [];
+  if (letters.length < 2) {
+    return json({ error: "bad_request", message: "Name must contain at least 2 letters." }, 400);
+  }
 
   const entry: GripEntry = {
     id: newEntryId(),
@@ -152,6 +157,19 @@ export async function POST(request: Request) {
 
   // Photo first: an orphaned photo is harmless, a dangling photoPath is not.
   if (parsed.data.photoBase64) {
+    // Verify it actually decodes to a JPEG (magic bytes FFD8FF) — the schema
+    // only checks the data-URL prefix, so without this any blob lands in git.
+    let magicOk = false;
+    try {
+      const b64 = parsed.data.photoBase64.split(",")[1] ?? "";
+      const head = Buffer.from(b64.slice(0, 16), "base64");
+      magicOk = head.length >= 3 && head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff;
+    } catch {
+      magicOk = false;
+    }
+    if (!magicOk) {
+      return json({ error: "bad_request", message: "Photo must be a valid JPEG image." }, 400);
+    }
     const photoPath = await uploadPhoto(token, entry.id, parsed.data.photoBase64);
     if (!photoPath) {
       return json({ error: "upstream", message: "Could not save the photo. Try again." }, 502);
