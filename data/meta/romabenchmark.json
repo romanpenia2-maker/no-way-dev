@@ -1,0 +1,114 @@
+{
+  "runAt": "2026-09-03",
+  "gateway": {
+    "name": "CEHWA (词花) — OpenAI-compatible proxy",
+    "baseUrl": "https://router.cehwa.com/v1"
+  },
+  "methodology": [
+    "Six frontier models behind one gateway, identical prompts, one run per model per task.",
+    "Ground truth for every task was computed independently by script before querying the models.",
+    "Coding task T3: the code from each answer was extracted and executed against 32 automated tests (25 randomized expressions diffed against the reference evaluator).",
+    "Latency includes gateway and network overhead — indicative only, not a precise speed metric.",
+    "Trial key window: 2026-09-02 → 2026-09-09; measured spend during the whole benchmark: under $0.09."
+  ],
+  "rounds": [
+    {
+      "id": "r1",
+      "label": "R1",
+      "task": "Smallest n with n≡1 (mod 2,3,4,5,6) and n≡0 (mod 7)",
+      "answer": "301 — naive LCM+1 gives 61, which is not divisible by 7"
+    },
+    {
+      "id": "r2",
+      "label": "R2",
+      "task": "Trailing zeros of 2026! in base 7",
+      "answer": "335 — requires Legendre's formula, not the base-10 shortcut"
+    },
+    {
+      "id": "r3a",
+      "label": "R3a",
+      "task": "Count integers 1..1000 divisible by 3 or 5 but not by 7",
+      "answer": "401 — double inclusion–exclusion"
+    },
+    {
+      "id": "r3b",
+      "label": "R3b",
+      "task": "Count primes in [2000, 2100]",
+      "answer": "14 — error-prone manual sieving of 101 candidates"
+    },
+    {
+      "id": "t1",
+      "label": "T1",
+      "task": "Predict output: x=[[]]*3; x[0].append(1); lambdas closing over the loop variable",
+      "answer": "[[1],[1],[1]] [2,2,2] — list aliasing + late binding"
+    },
+    {
+      "id": "t2",
+      "label": "T2",
+      "task": "Predict output: print(0.1+0.2 == 0.3, round(2.675, 2))",
+      "answer": "False 2.67 — binary float representation"
+    },
+    {
+      "id": "t3",
+      "label": "T3",
+      "task": "Write calc(s): arithmetic parser with + - * /, parentheses, unary minus — no eval/exec",
+      "answer": "Pass = 32/32 automated tests"
+    }
+  ],
+  "models": [
+    {
+      "name": "MiniMax-M3",
+      "checks": { "r1": "pass", "r2": "pass", "r3a": "pass", "r3b": "pass", "t1": "pass", "t2": "pass", "t3": "pass" },
+      "r3": { "ms": 16096, "tokens": 1341 },
+      "r4": { "ms": 10027, "tokens": 1633 },
+      "score": "8/8",
+      "verdict": "Best default. Flawless on both tracks while being the fastest and the most token-efficient by a wide margin."
+    },
+    {
+      "name": "Kimi-K3",
+      "checks": { "r1": "pass", "r2": "pass", "r3a": "pass", "r3b": "pass", "t1": "pass", "t2": "pass", "t3": "pass" },
+      "r3": { "ms": 46440, "tokens": 7023 },
+      "r4": { "ms": 102417, "tokens": 4419 },
+      "score": "8/8",
+      "verdict": "Best presentation — tabulated, fully checkable solutions. The slowest and most verbose of the pack."
+    },
+    {
+      "name": "GLM-5.3",
+      "checks": { "r1": "pass", "r2": "pass", "r3a": "pass", "r3b": "pass", "t1": "pass", "t2": "pass", "t3": "pass" },
+      "r3": { "ms": 68545, "tokens": 4789 },
+      "r4": { "ms": 18209, "tokens": 2057 },
+      "score": "8/8",
+      "verdict": "Solid all-rounder; the only model that explained why the float traps trigger (2.675 is stored as 2.67499…)."
+    },
+    {
+      "name": "DeepSeek-V4-Pro",
+      "checks": { "r1": "pass", "r2": "pass", "r3a": "pass", "r3b": "pass", "t1": "pass", "t2": "pass", "t3": "pass" },
+      "r3": { "ms": 99515, "tokens": 7233 },
+      "r4": { "ms": 43376, "tokens": 2269 },
+      "score": "8/8",
+      "verdict": "Deepest work shown — full composite sieve with correct factorizations (2021=43·47, 2023=7·17²). Slowest math round; its gateway channel died right after."
+    },
+    {
+      "name": "DeepSeek-V4-Flash",
+      "checks": { "r1": "pass", "r2": "pass", "r3a": "pass", "r3b": "pass", "t1": "na", "t2": "na", "t3": "na" },
+      "r3": { "ms": 75581, "tokens": 8640 },
+      "score": "4/4 math",
+      "verdict": "Math track flawless, but the gateway channel died before the coding round and stayed down — treat as unstable."
+    },
+    {
+      "name": "GLM-5.2",
+      "checks": { "r1": "pass", "r2": "pass", "r3a": "fail", "r3b": "fail", "t1": "pass", "t2": "pass", "t3": "pass" },
+      "failNotes": {
+        "r3a": "Answered 380 — derived 467 and 66 correctly, then wrote 467−66=380",
+        "r3b": "Answered 3 — hallucinated that all but three candidates are composite"
+      },
+      "r3": { "ms": 4115, "tokens": 653 },
+      "r4": { "ms": 62918, "tokens": 3352 },
+      "score": "6/8",
+      "verdict": "Code-capable (32/32) but unreliable at multi-step arithmetic: answered in 4 s with confident hallucinations. Do not trust it for exact counting."
+    }
+  ],
+  "incidents": [
+    "2026-09-03: both DeepSeek channels (Flash, Pro) returned “no available channel” for 5+ minutes mid-benchmark. The gateway is fine for experiments — never depend on a single model without a fallback."
+  ]
+}

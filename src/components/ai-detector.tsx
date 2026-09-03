@@ -1301,7 +1301,7 @@ function SpanHighlights({
       <p
         tabIndex={0}
         aria-label="Scrollable analysed text"
-        className="max-h-72 overflow-y-auto whitespace-pre-wrap border border-line p-3 text-sm leading-7 [-webkit-overflow-scrolling:touch] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ink"
+        className="max-h-72 overflow-y-auto whitespace-pre-wrap break-words border border-line p-3 text-sm leading-7 [-webkit-overflow-scrolling:touch] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ink"
       >
         {pieces}
       </p>

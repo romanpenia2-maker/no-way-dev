@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { BenchmarksExplorer } from "@/components/benchmarks-table";
+import { RomaBenchmarkSection } from "@/components/romabenchmark-section";
 import {
   ARENA_CATEGORY_ORDER,
   DEFAULT_ARENA_CATEGORY,
@@ -149,6 +150,9 @@ export default async function BenchmarksPage({ searchParams }: Props) {
           </div>
         </div>
       </section>
+
+      {/* RomaBenchmark — our own script-verified shootout of the CEHWA gateway models */}
+      <RomaBenchmarkSection />
 
       {/* Sources & methodology — the link farm moved to /methodology (Phase A) */}
       <section className="border-b border-line py-12">
