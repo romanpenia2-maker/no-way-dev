@@ -141,10 +141,11 @@ export async function POST(request: Request) {
   if (name.length < 2) {
     return json({ error: "bad_request", message: "Name must be at least 2 visible characters." }, 400);
   }
-  // Require at least 2 actual letters — blocks markup-stripped junk like "alert(1)".
+  // Require ≥2 actual letters and a plain human-name charset — blocks
+  // markup-stripped junk like "alert(1)" (parentheses are rejected).
   const letters = name.match(/\p{L}/gu) ?? [];
-  if (letters.length < 2) {
-    return json({ error: "bad_request", message: "Name must contain at least 2 letters." }, 400);
+  if (letters.length < 2 || !/^[\p{L}\p{N}][\p{L}\p{N} .,'-]*$/u.test(name)) {
+    return json({ error: "bad_request", message: "Name must be a plain name (letters, digits, spaces, .,'-)." }, 400);
   }
 
   const entry: GripEntry = {
