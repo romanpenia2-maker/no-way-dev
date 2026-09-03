@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
 
+// vercel.live hosts Vercel's live-feedback widget, injected on the rc/preview
+// deployment (rc.no-way.dev is a production-mode deployment, so VERCEL_ENV
+// can't discriminate) — allow it unconditionally; it never loads on prod.
+const vercelLive = " https://vercel.live";
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
@@ -22,11 +27,12 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
+              `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${vercelLive}`,
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https://raw.githubusercontent.com",
+              `img-src 'self' data: blob: https://raw.githubusercontent.com${vercelLive}`,
               "font-src 'self'",
-              "connect-src 'self' https://raw.githubusercontent.com https://api.github.com",
+              `connect-src 'self' https://raw.githubusercontent.com https://api.github.com${vercelLive}`,
+              `frame-src 'self'${vercelLive}`,
               "worker-src 'self' blob:",
               "frame-ancestors 'none'",
               "base-uri 'self'",
