@@ -12,6 +12,7 @@ import type { z } from "zod";
 import { modelSchema, type Model } from "../data/schemas/model.schema";
 import { providerSchema, type Provider } from "../data/schemas/provider.schema";
 import { benchmarksMetaSchema } from "../data/schemas/benchmarks-meta.schema";
+import { romabenchmarkSchema } from "../data/schemas/romabenchmark.schema";
 import { gripEntriesSchema } from "../data/schemas/grip.schema";
 import {
   attributionConfigSchema,
@@ -106,6 +107,12 @@ for (const file of readJsonFiles(modelsDir)) {
 const metaSchemas: Record<string, (raw: unknown) => { success: boolean; error?: string }> = {
   "benchmarks.json": (raw) => {
     const parsed = benchmarksMetaSchema.safeParse(raw);
+    return parsed.success
+      ? { success: true }
+      : { success: false, error: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") };
+  },
+  "romabenchmark.json": (raw) => {
+    const parsed = romabenchmarkSchema.safeParse(raw);
     return parsed.success
       ? { success: true }
       : { success: false, error: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") };
