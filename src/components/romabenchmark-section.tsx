@@ -49,7 +49,7 @@ export function RomaBenchmarkSection() {
         </div>
 
         {/* Results matrix */}
-        <div className="overflow-x-auto border border-line">
+        <div className="overflow-x-auto border border-line" tabIndex={0} role="region" aria-label="RomaBenchmark results matrix — scrollable table">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-ink">
@@ -113,7 +113,7 @@ export function RomaBenchmarkSection() {
             <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink2">
               Latency &amp; tokens (single run, via gateway)
             </h3>
-            <div className="overflow-x-auto border border-line">
+            <div className="overflow-x-auto border border-line" tabIndex={0} role="region" aria-label="Latency and tokens — scrollable table">
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-ink">

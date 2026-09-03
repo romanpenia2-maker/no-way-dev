@@ -90,7 +90,7 @@ export function DataTable<Row>({
   const { sorted, sortKey, sortAsc, toggleSort, ariaSort } = sort ?? internal;
   const activeSorted = sortable ? sorted : rows;
 
-  const exportHeader = columns.map((c) => c.label.replace(/\s*†$/, ""));
+  const exportHeader = columns.map((c) => c.label.replace(/\s*[†*]$/, ""));
   const exportRows = activeSorted.map((row) => columns.map((c) => c.exportValue(row)));
 
   const colSpan = columns.length + 1 + (expandable ? 1 : 0);
@@ -114,7 +114,11 @@ export function DataTable<Row>({
           {col.label} {sortable && sortKey === col.key ? (sortAsc ? "↑" : "↓") : ""}
         </TableHead>
       ))}
-      {expandable ? <TableHead className="w-8" aria-label="expand" /> : null}
+      {expandable ? (
+        <TableHead className="w-8">
+          <span className="sr-only">Expand row</span>
+        </TableHead>
+      ) : null}
     </TableRow>
   );
 

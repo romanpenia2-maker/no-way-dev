@@ -64,11 +64,8 @@ function CostBars({ rows, providerNames }: { rows: CostRow[]; providerNames: Rec
     0,
   );
   return (
-    <ul
-      className="min-w-0 space-y-2 overflow-hidden"
-      role="img"
-      aria-label="Bar chart of the top cheapest models by monthly cost"
-    >
+    <div role="img" aria-label="Bar chart of the top cheapest models by monthly cost">
+    <ul className="min-w-0 space-y-2 overflow-hidden">
       {rows.map((row, i) => {
         const pct =
           max > 0 && Number.isFinite(row.monthlyCost) ? Math.min(100, (row.monthlyCost / max) * 100) : 0;
@@ -97,6 +94,7 @@ function CostBars({ rows, providerNames }: { rows: CostRow[]; providerNames: Rec
         );
       })}
     </ul>
+    </div>
   );
 }
 

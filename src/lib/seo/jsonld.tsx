@@ -29,6 +29,7 @@ export function techArticleJsonLd(model: Model) {
     "@type": "TechArticle",
     headline: `${model.name} API Pricing`,
     description: `API prices for ${model.name}: input/output cost per 1M tokens across providers, context window of ${model.context.tokens.toLocaleString("en-US")} tokens, capabilities and data freshness.`,
+    datePublished: model.releasedAt,
     dateModified: model.lastVerifiedAt,
     author: {
       "@type": "Organization",

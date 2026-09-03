@@ -60,7 +60,7 @@ function buildColumns(): DataColumn<LeaderboardRow>[] {
     },
     {
       key: "value",
-      label: "Value †",
+      label: "Value *",
       numeric: true,
       sortValue: (row) => valueScore(row.arena.elo, row.priceIn, row.priceOut),
       render: (row) => valueScore(row.arena.elo, row.priceIn, row.priceOut) ?? <span className="text-ink2">—</span>,
@@ -293,7 +293,7 @@ export function BenchmarksExplorer({
     <div className="space-y-6">
       {/* Tabs: nowrap scroll-strip, active tab underlined in ink */}
       <div className="border-b border-ink" role="tablist" aria-label="Arena category" onKeyDown={onTablistKeyDown}>
-        <div className="no-scrollbar -mb-px flex flex-nowrap overflow-x-auto snap-x snap-mandatory">
+        <div className="no-scrollbar -mb-px flex flex-nowrap overflow-x-auto snap-x snap-mandatory" tabIndex={0} aria-label="Arena category tabs — scrollable">
           {ARENA_CATEGORY_ORDER.map((c) => (
             <button
               key={c}
@@ -320,7 +320,7 @@ export function BenchmarksExplorer({
 
         {/* Legend — one line above the table so the markers make sense in context */}
         <p className="font-mono text-[11px] leading-5 text-ink2">
-          — not measured / not published · <sup className="font-bold">†</sup> score has a caveat — see footnotes
+          — not measured / not published · <sup className="font-bold">*</sup> score has a caveat — see footnotes
           below · <span className="font-bold">P</span> preliminary rating (low vote count) · <ValueFootnote /> ·
           sort by any column · open a row for full arena &amp; benchmark data.
         </p>

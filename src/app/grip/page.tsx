@@ -45,6 +45,11 @@ export default async function GripPage() {
             name: "Grip strength leaderboard",
             url: `${site.url}/grip`,
             numberOfItems: entries.length,
+            itemListElement: entries.map((e, i) => ({
+              "@type": "ListItem",
+              position: i + 1,
+              name: `${e.name} — ${e.kg} kg`,
+            })),
           },
           breadcrumbJsonLd([
             { name: "Home", url: site.url },

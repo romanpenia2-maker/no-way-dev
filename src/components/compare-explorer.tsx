@@ -85,7 +85,7 @@ function buildRows(arenaLabels: string[], scenario: CompareScenario): Row[] {
         m.benchmarks[i] !== undefined ? <span className="font-mono nums">{m.benchmarks[i].toFixed(1)}</span> : dash,
     })),
     {
-      label: "Value †",
+      label: "Value *",
       section: "Value",
       render: (m) => (m.value !== undefined ? <span className="font-mono font-bold nums">{m.value}</span> : dash),
     },

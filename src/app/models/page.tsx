@@ -29,7 +29,7 @@ export default function ModelsIndexPage() {
         model page.
       </p>
 
-      <div className="overflow-x-auto border border-line">
+      <div className="overflow-x-auto border border-line" tabIndex={0} role="region" aria-label="Models registry — scrollable table">
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-ink">
