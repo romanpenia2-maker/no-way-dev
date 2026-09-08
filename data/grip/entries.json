@@ -35,8 +35,16 @@
     "id": "gmt7an1cc8ezy",
     "name": "Alex Syhomlin",
     "kg": 56.7,
+    "photoPath": "data/grip/photos/gmt7an1cc8ezy.jpg",
     "createdAt": "2026-08-24T13:50:32.076Z",
+    "source": "photo-ai"
+  },
+  {
+    "id": "gmtsiwdcjarcv",
+    "name": "Vlad",
+    "kg": 49.5,
+    "createdAt": "2026-09-08T10:24:54.163Z",
     "source": "photo-ai",
-    "photoPath": "data/grip/photos/gmt7an1cc8ezy.jpg"
+    "photoPath": "data/grip/photos/gmtsiwdcjarcv.jpg"
   }
 ]
