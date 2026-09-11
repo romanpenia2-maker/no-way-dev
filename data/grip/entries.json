@@ -43,8 +43,16 @@
     "id": "gmtsiwdcjarcv",
     "name": "Vlad",
     "kg": 49.5,
+    "photoPath": "data/grip/photos/gmtsiwdcjarcv.jpg",
     "createdAt": "2026-09-08T10:24:54.163Z",
+    "source": "photo-ai"
+  },
+  {
+    "id": "gmtwnmazbou03",
+    "name": "Evhenii",
+    "kg": 46.3,
+    "createdAt": "2026-09-11T07:48:07.319Z",
     "source": "photo-ai",
-    "photoPath": "data/grip/photos/gmtsiwdcjarcv.jpg"
+    "photoPath": "data/grip/photos/gmtwnmazbou03.jpg"
   }
 ]
