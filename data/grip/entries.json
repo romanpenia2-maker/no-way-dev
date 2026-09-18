@@ -51,8 +51,16 @@
     "id": "gmtwnmazbou03",
     "name": "Evhenii",
     "kg": 46.3,
+    "photoPath": "data/grip/photos/gmtwnmazbou03.jpg",
     "createdAt": "2026-09-11T07:48:07.319Z",
+    "source": "photo-ai"
+  },
+  {
+    "id": "gmu715adsvovs",
+    "name": "Slava",
+    "kg": 59.8,
+    "createdAt": "2026-09-18T14:04:29.776Z",
     "source": "photo-ai",
-    "photoPath": "data/grip/photos/gmtwnmazbou03.jpg"
+    "photoPath": "data/grip/photos/gmu715adsvovs.jpg"
   }
 ]
