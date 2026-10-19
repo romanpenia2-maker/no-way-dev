@@ -59,8 +59,16 @@
     "id": "gmu715adsvovs",
     "name": "Slava",
     "kg": 59.8,
+    "photoPath": "data/grip/photos/gmu715adsvovs.jpg",
     "createdAt": "2026-09-18T14:04:29.776Z",
+    "source": "photo-ai"
+  },
+  {
+    "id": "gmvfcrtinjums",
+    "name": "Ilia",
+    "kg": 45.2,
+    "createdAt": "2026-10-19T14:31:48.527Z",
     "source": "photo-ai",
-    "photoPath": "data/grip/photos/gmu715adsvovs.jpg"
+    "photoPath": "data/grip/photos/gmvfcrtinjums.jpg"
   }
 ]
